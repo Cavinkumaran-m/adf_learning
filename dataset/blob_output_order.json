@@ -10,9 +10,9 @@
 		"typeProperties": {
 			"location": {
 				"type": "AzureBlobStorageLocation",
-				"fileName": "consolidated_order.csv",
+				"fileName": "order.csv",
 				"folderPath": "order",
-				"container": "consolidated-files"
+				"container": "consolidated"
 			},
 			"columnDelimiter": ",",
 			"escapeChar": "\\",

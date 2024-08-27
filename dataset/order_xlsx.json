@@ -11,7 +11,8 @@
 			"sheetName": "Sheet1",
 			"location": {
 				"type": "AzureBlobStorageLocation",
-				"container": "training"
+				"folderPath": "assessment_1",
+				"container": "input"
 			},
 			"firstRowAsHeader": true
 		},

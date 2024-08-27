@@ -10,7 +10,8 @@
 		"typeProperties": {
 			"location": {
 				"type": "AzureBlobStorageLocation",
-				"container": "training"
+				"folderPath": "assessment_1",
+				"container": "input"
 			},
 			"columnDelimiter": ",",
 			"escapeChar": "\\",

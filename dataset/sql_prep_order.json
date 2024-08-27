@@ -1,5 +1,5 @@
 {
-	"name": "sql_raw_order",
+	"name": "sql_prep_order",
 	"properties": {
 		"linkedServiceName": {
 			"referenceName": "LS_SQL_TEST",
@@ -38,7 +38,7 @@
 			}
 		],
 		"typeProperties": {
-			"schema": "raw",
+			"schema": "prep",
 			"table": "order"
 		}
 	},

@@ -1,5 +1,5 @@
 {
-	"name": "pipeline1",
+	"name": "files to sql_raw",
 	"properties": {
 		"activities": [
 			{
@@ -301,7 +301,7 @@
 				],
 				"outputs": [
 					{
-						"referenceName": "sql_order",
+						"referenceName": "sql_raw_order",
 						"type": "DatasetReference"
 					}
 				]
@@ -486,7 +486,7 @@
 				],
 				"outputs": [
 					{
-						"referenceName": "sql_cust",
+						"referenceName": "sql_raw_cust",
 						"type": "DatasetReference"
 					}
 				]

@@ -1,5 +1,5 @@
 {
-	"name": "sql_raw_cust",
+	"name": "sql_prep_cust",
 	"properties": {
 		"linkedServiceName": {
 			"referenceName": "LS_SQL_TEST",
@@ -9,7 +9,7 @@
 		"type": "AzureSqlTable",
 		"schema": [],
 		"typeProperties": {
-			"schema": "raw",
+			"schema": "prep",
 			"table": "customer"
 		}
 	},

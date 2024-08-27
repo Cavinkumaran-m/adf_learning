@@ -1,0 +1,30 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"value": "learning-ck-df"
+		},
+		"LS_BLOB_connectionString": {
+			"value": ""
+		},
+		"LS_SQL_TEST_password": {
+			"value": ""
+		},
+		"LS_SQL_TEST_properties_typeProperties_server": {
+			"value": "learning-ck-sql-server.database.windows.net"
+		},
+		"LS_SQL_TEST_properties_typeProperties_database": {
+			"value": "test"
+		},
+		"LS_SQL_TEST_properties_typeProperties_userName": {
+			"value": "cavinkumaran1257"
+		},
+		"containerUri": {
+			"value": ""
+		},
+		"containerSasToken": {
+			"value": ""
+		}
+	}
+}

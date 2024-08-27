@@ -1,0 +1,17 @@
+{
+	"name": "sql_updated_order",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_SQL_TEST",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [],
+		"typeProperties": {
+			"schema": "raw",
+			"table": "updated_order"
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

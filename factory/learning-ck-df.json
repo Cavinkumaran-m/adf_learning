@@ -1,0 +1,9 @@
+{
+	"name": "learning-ck-df",
+	"location": "centralindia",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "3ff0f6bb-90a0-4655-844d-a627b9510235",
+		"tenantId": "2800c0a0-70e9-49be-8733-faeaa6aced99"
+	}
+}

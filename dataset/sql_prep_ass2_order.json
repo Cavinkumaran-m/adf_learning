@@ -1,0 +1,16 @@
+{
+	"name": "sql_prep_ass2_order",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_SQL_TEST",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [],
+		"typeProperties": {
+			"schema": "prep",
+			"table": "ass2_order"
+		}
+	}
+}

@@ -1,0 +1,16 @@
+{
+	"name": "sql_raw_store",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_SQL_TEST",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [],
+		"typeProperties": {
+			"schema": "raw",
+			"table": "store"
+		}
+	}
+}

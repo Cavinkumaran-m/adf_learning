@@ -12,6 +12,10 @@
 					"name": "source1"
 				},
 				{
+					"dataset": {
+						"referenceName": "sql_raw_store",
+						"type": "DatasetReference"
+					},
 					"name": "source2"
 				}
 			],
@@ -29,6 +33,13 @@
 						"type": "DatasetReference"
 					},
 					"name": "sink2"
+				},
+				{
+					"dataset": {
+						"referenceName": "sql_prep_ass2_product",
+						"type": "DatasetReference"
+					},
+					"name": "sink3"
 				}
 			],
 			"transformations": [
@@ -37,6 +48,9 @@
 				},
 				{
 					"name": "selectOrder"
+				},
+				{
+					"name": "select1"
 				}
 			],
 			"scriptLines": [
@@ -67,8 +81,33 @@
 				"     validateSchema: false,",
 				"     isolationLevel: 'READ_UNCOMMITTED',",
 				"     format: 'table') ~> source1",
-				"source(allowSchemaDrift: true,",
-				"     validateSchema: false) ~> source2",
+				"source(output(",
+				"          {Row ID} as string,",
+				"          {Order ID} as string,",
+				"          {Order Date} as string,",
+				"          {Ship Date} as string,",
+				"          {Ship Mode} as string,",
+				"          {Customer ID} as string,",
+				"          {Customer Name} as string,",
+				"          Segment as string,",
+				"          Country as string,",
+				"          City as string,",
+				"          State as string,",
+				"          {Postal Code} as string,",
+				"          Region as string,",
+				"          {Product ID} as string,",
+				"          Category as string,",
+				"          {Sub-Category} as string,",
+				"          {Product Name} as string,",
+				"          Sales as string,",
+				"          Quantity as string,",
+				"          Discount as string,",
+				"          Profit as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> source2",
 				"source1 select(mapColumn(",
 				"          {Customer ID},",
 				"          {Customer Name},",
@@ -94,6 +133,14 @@
 				"     ),",
 				"     skipDuplicateMapInputs: true,",
 				"     skipDuplicateMapOutputs: true) ~> selectOrder",
+				"source2 select(mapColumn(",
+				"          {Product ID},",
+				"          Category,",
+				"          {Sub-Category},",
+				"          {Product Name}",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select1",
 				"selectCustomer sink(allowSchemaDrift: true,",
 				"     validateSchema: false,",
 				"     deletable:false,",
@@ -113,7 +160,17 @@
 				"     format: 'table',",
 				"     skipDuplicateMapInputs: true,",
 				"     skipDuplicateMapOutputs: true,",
-				"     errorHandlingOption: 'stopOnFirstError') ~> sink2"
+				"     errorHandlingOption: 'stopOnFirstError') ~> sink2",
+				"select1 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError') ~> sink3"
 			]
 		}
 	}

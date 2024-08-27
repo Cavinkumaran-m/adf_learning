@@ -33,6 +33,13 @@
 						"type": "DatasetReference"
 					},
 					"name": "sink2"
+				},
+				{
+					"dataset": {
+						"referenceName": "sql_prep_product",
+						"type": "DatasetReference"
+					},
+					"name": "sink3"
 				}
 			],
 			"transformations": [
@@ -47,6 +54,15 @@
 				},
 				{
 					"name": "filter2"
+				},
+				{
+					"name": "derivedColumn1"
+				},
+				{
+					"name": "select2"
+				},
+				{
+					"name": "aggregate2"
 				}
 			],
 			"scriptLines": [
@@ -70,9 +86,9 @@
 				"          OrderID as string,",
 				"          ProductID as string,",
 				"          ProductName as string,",
-				"          Quantity as string,",
+				"          Quantity as integer,",
 				"          OrderTimestamp as string,",
-				"          Price as string,",
+				"          Price as integer,",
 				"          CustomerID as string",
 				"     ),",
 				"     allowSchemaDrift: true,",
@@ -109,6 +125,19 @@
 				"     skipDuplicateMapInputs: true,",
 				"     skipDuplicateMapOutputs: true) ~> select1",
 				"orders filter(OrderTimestamp != \"NULL\" && OrderTimestamp != \"\" && !isNull(OrderTimestamp)) ~> filter2",
+				"filter2 derive(pricePerUnit = Price/Quantity) ~> derivedColumn1",
+				"aggregate2 select(mapColumn(",
+				"          ProductID,",
+				"          ProductName,",
+				"          pricePerUnit",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select2",
+				"derivedColumn1 aggregate(groupBy(ProductID,",
+				"          ProductName,",
+				"          Price,",
+				"          pricePerUnit),",
+				"     count = count(ProductID)) ~> aggregate2",
 				"select1 sink(allowSchemaDrift: true,",
 				"     validateSchema: false,",
 				"     deletable:false,",
@@ -139,7 +168,18 @@
 				"     format: 'table',",
 				"     skipDuplicateMapInputs: true,",
 				"     skipDuplicateMapOutputs: true,",
-				"     errorHandlingOption: 'stopOnFirstError') ~> sink2"
+				"     errorHandlingOption: 'stopOnFirstError') ~> sink2",
+				"select2 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     truncate:true,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError') ~> sink3"
 			]
 		}
 	}

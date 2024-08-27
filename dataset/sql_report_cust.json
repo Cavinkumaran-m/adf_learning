@@ -1,0 +1,16 @@
+{
+	"name": "sql_report_cust",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_SQL_TEST",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [],
+		"typeProperties": {
+			"schema": "report",
+			"table": "customer"
+		}
+	}
+}

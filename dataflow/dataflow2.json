@@ -29,8 +29,53 @@
 					"name": "ratings"
 				}
 			],
-			"sinks": [],
-			"transformations": [],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "sql_report_data",
+						"type": "DatasetReference"
+					},
+					"name": "usersSink"
+				},
+				{
+					"dataset": {
+						"referenceName": "sql_report_data",
+						"type": "DatasetReference"
+					},
+					"name": "booksSink"
+				},
+				{
+					"dataset": {
+						"referenceName": "sql_report_data",
+						"type": "DatasetReference"
+					},
+					"name": "factSink"
+				},
+				{
+					"dataset": {
+						"referenceName": "sql_report_data",
+						"type": "DatasetReference"
+					},
+					"name": "ratingsSink"
+				}
+			],
+			"transformations": [
+				{
+					"name": "cleanedBooks"
+				},
+				{
+					"name": "joinRatingsAndUsers"
+				},
+				{
+					"name": "RatingsAndUsers"
+				},
+				{
+					"name": "RatingsAndUsersAndBooks"
+				},
+				{
+					"name": "factTable"
+				}
+			],
 			"scriptLines": [
 				"source(output(",
 				"          id as string,",
@@ -47,7 +92,13 @@
 				"     validateSchema: false,",
 				"     isolationLevel: 'READ_UNCOMMITTED',",
 				"     format: 'table') ~> books",
-				"source(allowSchemaDrift: true,",
+				"source(output(",
+				"          id as string,",
+				"          userName as string,",
+				"          pwd as string,",
+				"          isAdmin as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
 				"     validateSchema: false,",
 				"     isolationLevel: 'READ_UNCOMMITTED',",
 				"     format: 'table') ~> users",
@@ -62,7 +113,95 @@
 				"     allowSchemaDrift: true,",
 				"     validateSchema: false,",
 				"     isolationLevel: 'READ_UNCOMMITTED',",
-				"     format: 'table') ~> ratings"
+				"     format: 'table') ~> ratings",
+				"books select(mapColumn(",
+				"          id,",
+				"          ISBN,",
+				"          title,",
+				"          genre,",
+				"          author,",
+				"          publishedYear,",
+				"          image_url,",
+				"          description",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> cleanedBooks",
+				"ratings, users join(user_id == users@id,",
+				"     joinType:'left',",
+				"     matchType:'exact',",
+				"     ignoreSpaces: false,",
+				"     broadcast: 'auto')~> joinRatingsAndUsers",
+				"joinRatingsAndUsers select(mapColumn(",
+				"          id = ratings@id,",
+				"          userName,",
+				"          book_id,",
+				"          stars,",
+				"          review,",
+				"          review_date",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> RatingsAndUsers",
+				"RatingsAndUsers, cleanedBooks join(book_id == cleanedBooks@id,",
+				"     joinType:'left',",
+				"     matchType:'exact',",
+				"     ignoreSpaces: false,",
+				"     broadcast: 'auto')~> RatingsAndUsersAndBooks",
+				"RatingsAndUsersAndBooks select(mapColumn(",
+				"          id = RatingsAndUsers@id,",
+				"          userName,",
+				"          title,",
+				"          genre,",
+				"          author,",
+				"          stars,",
+				"          review,",
+				"          review_date,",
+				"          publishedYear,",
+				"          description",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> factTable",
+				"users sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     truncate:true,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError') ~> usersSink",
+				"cleanedBooks sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     truncate:true,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError') ~> booksSink",
+				"factTable sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError') ~> factSink",
+				"ratings sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError') ~> ratingsSink"
 			]
 		}
 	}

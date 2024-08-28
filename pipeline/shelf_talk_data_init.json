@@ -3,49 +3,13 @@
 	"properties": {
 		"activities": [
 			{
-				"name": "Get Metadata1",
-				"type": "GetMetadata",
-				"dependsOn": [],
-				"policy": {
-					"timeout": "0.12:00:00",
-					"retry": 0,
-					"retryIntervalInSeconds": 30,
-					"secureOutput": false,
-					"secureInput": false
-				},
-				"userProperties": [],
-				"typeProperties": {
-					"dataset": {
-						"referenceName": "shelf_talk_csv",
-						"type": "DatasetReference"
-					},
-					"fieldList": [
-						"childItems"
-					],
-					"storeSettings": {
-						"type": "AzureBlobStorageReadSettings",
-						"enablePartitionDiscovery": false
-					},
-					"formatSettings": {
-						"type": "DelimitedTextReadSettings"
-					}
-				}
-			},
-			{
 				"name": "ForEach1",
 				"type": "ForEach",
-				"dependsOn": [
-					{
-						"activity": "Get Metadata1",
-						"dependencyConditions": [
-							"Succeeded"
-						]
-					}
-				],
+				"dependsOn": [],
 				"userProperties": [],
 				"typeProperties": {
 					"items": {
-						"value": "@activity('Get Metadata1').output.childItems",
+						"value": "@variables('tablesArray')",
 						"type": "Expression"
 					},
 					"activities": [
@@ -69,7 +33,7 @@
 										"recursive": true,
 										"wildcardFolderPath": "shelf_talk",
 										"wildcardFileName": {
-											"value": "@item().name",
+											"value": "@concat(item(), '.csv')",
 											"type": "Expression"
 										},
 										"enablePartitionDiscovery": false
@@ -81,7 +45,7 @@
 								"sink": {
 									"type": "AzureSqlSink",
 									"preCopyScript": {
-										"value": "drop table if exists [prep].[@{replace(item().name, '.csv','')}]",
+										"value": "drop table if exists [prod].[@{item()}]",
 										"type": "Expression"
 									},
 									"writeBehavior": "insert",
@@ -111,7 +75,7 @@
 									"type": "DatasetReference",
 									"parameters": {
 										"tableName": {
-											"value": "@replace(item().name, '.csv', '')",
+											"value": "@item()",
 											"type": "Expression"
 										}
 									}

@@ -1,0 +1,27 @@
+{
+	"name": "sql_report_data",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_SQL_SHELF_TALK",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"tableName": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "shelf_talk"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [],
+		"typeProperties": {
+			"schema": "report",
+			"table": {
+				"value": "@dataset().tableName",
+				"type": "Expression"
+			}
+		}
+	}
+}

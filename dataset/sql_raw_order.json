@@ -5,6 +5,9 @@
 			"referenceName": "LS_SQL_TEST",
 			"type": "LinkedServiceReference"
 		},
+		"folder": {
+			"name": "other"
+		},
 		"annotations": [],
 		"type": "AzureSqlTable",
 		"schema": [

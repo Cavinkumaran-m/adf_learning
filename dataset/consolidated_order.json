@@ -5,6 +5,9 @@
 			"referenceName": "LS_BLOB",
 			"type": "LinkedServiceReference"
 		},
+		"folder": {
+			"name": "other"
+		},
 		"annotations": [],
 		"type": "DelimitedText",
 		"typeProperties": {

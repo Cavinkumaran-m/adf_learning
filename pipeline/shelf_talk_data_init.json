@@ -121,7 +121,13 @@
 		"variables": {
 			"FileName": {
 				"type": "String"
+			},
+			"@item": {
+				"type": "String"
 			}
+		},
+		"folder": {
+			"name": "shelf_talk"
 		},
 		"annotations": []
 	}

@@ -1,6 +1,9 @@
 {
 	"name": "update_price",
 	"properties": {
+		"folder": {
+			"name": "other"
+		},
 		"type": "MappingDataFlow",
 		"typeProperties": {
 			"sources": [

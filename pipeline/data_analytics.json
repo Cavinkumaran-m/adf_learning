@@ -9,9 +9,10 @@
 				"userProperties": [],
 				"typeProperties": {
 					"items": {
-						"value": "{\"books\",\"users\",\"ratings\"}",
+						"value": "@variables('tablesArray')",
 						"type": "Expression"
 					},
+					"isSequential": true,
 					"activities": [
 						{
 							"name": "Copy data1",
@@ -75,8 +76,13 @@
 			}
 		],
 		"variables": {
-			"@item": {
-				"type": "String"
+			"tablesArray": {
+				"type": "Array",
+				"defaultValue": [
+					"books",
+					"users",
+					"ratings"
+				]
 			}
 		},
 		"folder": {

@@ -12,16 +12,57 @@
 						"referenceName": "sql_prep_data",
 						"type": "DatasetReference"
 					},
-					"name": "source1"
+					"name": "books"
+				},
+				{
+					"dataset": {
+						"referenceName": "sql_prep_data",
+						"type": "DatasetReference"
+					},
+					"name": "users"
+				},
+				{
+					"dataset": {
+						"referenceName": "sql_prep_data",
+						"type": "DatasetReference"
+					},
+					"name": "ratings"
 				}
 			],
 			"sinks": [],
 			"transformations": [],
 			"scriptLines": [
+				"source(output(",
+				"          id as string,",
+				"          ISBN as string,",
+				"          title as string,",
+				"          genre as string,",
+				"          author as string,",
+				"          publishedYear as string,",
+				"          image_blob as string,",
+				"          image_url as string,",
+				"          description as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> books",
 				"source(allowSchemaDrift: true,",
 				"     validateSchema: false,",
 				"     isolationLevel: 'READ_UNCOMMITTED',",
-				"     format: 'table') ~> source1"
+				"     format: 'table') ~> users",
+				"source(output(",
+				"          id as string,",
+				"          user_id as string,",
+				"          book_id as string,",
+				"          stars as string,",
+				"          review as string,",
+				"          review_date as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> ratings"
 			]
 		}
 	}

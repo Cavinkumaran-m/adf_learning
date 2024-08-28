@@ -80,6 +80,10 @@
 								},
 								"sink": {
 									"type": "AzureSqlSink",
+									"preCopyScript": {
+										"value": "drop table if exists [prep].[@{replace(item().name, '.csv','')}]",
+										"type": "Expression"
+									},
 									"writeBehavior": "insert",
 									"sqlWriterUseTableLock": false,
 									"tableOption": "autoCreate",
@@ -122,8 +126,13 @@
 			"FileName": {
 				"type": "String"
 			},
-			"@item": {
-				"type": "String"
+			"tablesArray": {
+				"type": "Array",
+				"defaultValue": [
+					"books",
+					"users",
+					"ratings"
+				]
 			}
 		},
 		"folder": {

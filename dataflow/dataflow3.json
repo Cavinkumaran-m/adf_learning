@@ -1,0 +1,169 @@
+{
+	"name": "dataflow3",
+	"properties": {
+		"folder": {
+			"name": "misumi"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "misumi_sql_data",
+						"type": "DatasetReference"
+					},
+					"name": "poducts"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "misumi_sql_data",
+						"type": "DatasetReference"
+					},
+					"name": "subCategorySink"
+				},
+				{
+					"dataset": {
+						"referenceName": "misumi_sql_data",
+						"type": "DatasetReference"
+					},
+					"name": "mainCategorySink"
+				}
+			],
+			"transformations": [
+				{
+					"name": "select1"
+				},
+				{
+					"name": "aggregate1"
+				},
+				{
+					"name": "surrogateKey1"
+				},
+				{
+					"name": "select2"
+				},
+				{
+					"name": "aggregate2"
+				},
+				{
+					"name": "MainCategory"
+				},
+				{
+					"name": "lookup1"
+				},
+				{
+					"name": "select3"
+				},
+				{
+					"name": "surrogateKey2"
+				},
+				{
+					"name": "select4"
+				},
+				{
+					"name": "aggregate3"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          category as string,",
+				"          subCategory as string,",
+				"          seriesCategoryCode as string,",
+				"          seriesCategoryName as string,",
+				"          seriesCode as string,",
+				"          seriesName as string,",
+				"          brandCode as string,",
+				"          brandName as string,",
+				"          imageUrl as string,",
+				"          minStandardUnitPrice as string,",
+				"          maxStandardUnitPrice as string,",
+				"          minPricePerPiece as string,",
+				"          maxPricePerPiece as string,",
+				"          minStandardDaysToShip as string,",
+				"          maxStandardDaysToShip as string,",
+				"          stockItemFlag as string,",
+				"          discontinuedProductFlag as string,",
+				"          specialShipmentFlag as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> poducts",
+				"poducts select(mapColumn(",
+				"          category",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select1",
+				"select1 aggregate(groupBy(category),",
+				"     count = count()) ~> aggregate1",
+				"aggregate1 keyGenerate(output(id as long),",
+				"     startAt: 1L,",
+				"     stepValue: 1L) ~> surrogateKey1",
+				"poducts select(mapColumn(",
+				"          category,",
+				"          subCategory",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select2",
+				"select2 aggregate(groupBy(category,",
+				"          subCategory),",
+				"     count = count()) ~> aggregate2",
+				"surrogateKey1 select(mapColumn(",
+				"          category,",
+				"          id",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> MainCategory",
+				"aggregate2, MainCategory lookup(aggregate2@category == MainCategory@category,",
+				"     multiple: false,",
+				"     pickup: 'any',",
+				"     broadcast: 'auto')~> lookup1",
+				"lookup1 select(mapColumn(",
+				"          subCategory,",
+				"          Category_id = id",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select3",
+				"select3 keyGenerate(output(id as long),",
+				"     startAt: 1L,",
+				"     stepValue: 1L) ~> surrogateKey2",
+				"poducts select(mapColumn(",
+				"          category,",
+				"          subCategory,",
+				"          seriesCategoryCode,",
+				"          seriesCategoryName",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select4",
+				"select4 aggregate(groupBy(category,",
+				"          subCategory,",
+				"          seriesCategoryCode,",
+				"          seriesCategoryName),",
+				"     count = count()) ~> aggregate3",
+				"surrogateKey2 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     recreate:true,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError') ~> subCategorySink",
+				"MainCategory sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError') ~> mainCategorySink"
+			]
+		}
+	}
+}

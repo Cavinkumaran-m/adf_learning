@@ -36,6 +36,13 @@
 						"type": "DatasetReference"
 					},
 					"name": "seriesCategorySink"
+				},
+				{
+					"dataset": {
+						"referenceName": "misumi_sql_data",
+						"type": "DatasetReference"
+					},
+					"name": "productsSink"
 				}
 			],
 			"transformations": [
@@ -254,6 +261,7 @@
 				"     pickup: 'any',",
 				"     broadcast: 'auto')~> lookup4",
 				"lookup4 select(mapColumn(",
+				"          category_id,",
 				"          sub_category_id,",
 				"          series_category_id,",
 				"          productCode,",
@@ -268,10 +276,7 @@
 				"          maxStandardDaysToShip,",
 				"          stockItemFlag,",
 				"          discontinuedProductFlag,",
-				"          specialShipmentFlag,",
-				"          id,",
-				"          category_id,",
-				"          subCategory",
+				"          specialShipmentFlag",
 				"     ),",
 				"     skipDuplicateMapInputs: true,",
 				"     skipDuplicateMapOutputs: true) ~> select12",
@@ -307,7 +312,17 @@
 				"     format: 'table',",
 				"     skipDuplicateMapInputs: true,",
 				"     skipDuplicateMapOutputs: true,",
-				"     errorHandlingOption: 'stopOnFirstError') ~> seriesCategorySink"
+				"     errorHandlingOption: 'stopOnFirstError') ~> seriesCategorySink",
+				"select12 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError') ~> productsSink"
 			]
 		}
 	}

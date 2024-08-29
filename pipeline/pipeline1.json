@@ -130,6 +130,59 @@
 						}
 					}
 				]
+			},
+			{
+				"name": "dataflow3",
+				"type": "ExecuteDataFlow",
+				"dependsOn": [
+					{
+						"activity": "raw to prep",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataflow": {
+						"referenceName": "dataflow3",
+						"type": "DataFlowReference",
+						"datasetParameters": {
+							"poducts": {
+								"schemaName": "prep",
+								"tableName": "products"
+							},
+							"subCategorySink": {
+								"schemaName": "report",
+								"tableName": "subcategory"
+							},
+							"mainCategorySink": {
+								"schemaName": "report",
+								"tableName": "category"
+							},
+							"seriesCategorySink": {
+								"schemaName": "report",
+								"tableName": "seriescategory"
+							},
+							"productsSink": {
+								"schemaName": "report",
+								"tableName": "products"
+							}
+						}
+					},
+					"compute": {
+						"coreCount": 8,
+						"computeType": "General"
+					},
+					"traceLevel": "Fine"
+				}
 			}
 		],
 		"variables": {

@@ -47,76 +47,76 @@
 			],
 			"transformations": [
 				{
-					"name": "select1"
+					"name": "onlyCategory"
 				},
 				{
-					"name": "aggregate1"
+					"name": "groupCategory"
 				},
 				{
-					"name": "surrogateKey1"
+					"name": "addId"
 				},
 				{
-					"name": "select2"
+					"name": "CategoryAndSubcategory"
 				},
 				{
-					"name": "aggregate2"
+					"name": "groupBySubcategory"
 				},
 				{
 					"name": "MainCategory"
 				},
 				{
-					"name": "lookup1"
+					"name": "lookupMainCategory"
 				},
 				{
-					"name": "surrogateKey2"
+					"name": "IdForSubcategury"
 				},
 				{
-					"name": "select4"
+					"name": "seriesCategory"
 				},
 				{
-					"name": "aggregate3"
+					"name": "groupBySeriescategory"
 				},
 				{
-					"name": "lookup2"
+					"name": "addSubcategoryId"
 				},
 				{
-					"name": "select5"
+					"name": "removeUnnecessaryColumns"
 				},
 				{
-					"name": "surrogateKey3"
+					"name": "IdForSubcategory"
 				},
 				{
-					"name": "select6"
+					"name": "selectProducts"
 				},
 				{
-					"name": "lookup3"
+					"name": "addSeriescategoryId"
 				},
 				{
-					"name": "select8"
+					"name": "reorderColumnsForSub"
 				},
 				{
-					"name": "select9"
+					"name": "reorderColumnForSeries"
 				},
 				{
-					"name": "select10"
+					"name": "IdAndSubcategory"
 				},
 				{
-					"name": "select11"
+					"name": "removeColumnsProducts"
 				},
 				{
-					"name": "lookup4"
+					"name": "addSubcategiryAndCategoryId"
 				},
 				{
-					"name": "select12"
+					"name": "removeAbundantColumns"
 				},
 				{
-					"name": "window1"
+					"name": "overProductCode"
 				},
 				{
-					"name": "filter1"
+					"name": "removeDuplicates"
 				},
 				{
-					"name": "select13"
+					"name": "removeDuplicateColumn"
 				}
 			],
 			"scriptLines": [
@@ -148,34 +148,34 @@
 				"          category",
 				"     ),",
 				"     skipDuplicateMapInputs: true,",
-				"     skipDuplicateMapOutputs: true) ~> select1",
-				"select1 aggregate(groupBy(category),",
-				"     count = count()) ~> aggregate1",
-				"aggregate1 keyGenerate(output(id as long),",
+				"     skipDuplicateMapOutputs: true) ~> onlyCategory",
+				"onlyCategory aggregate(groupBy(category),",
+				"     count = count()) ~> groupCategory",
+				"groupCategory keyGenerate(output(id as long),",
 				"     startAt: 1L,",
-				"     stepValue: 1L) ~> surrogateKey1",
+				"     stepValue: 1L) ~> addId",
 				"poducts select(mapColumn(",
 				"          category,",
 				"          subCategory",
 				"     ),",
 				"     skipDuplicateMapInputs: true,",
-				"     skipDuplicateMapOutputs: true) ~> select2",
-				"select2 aggregate(groupBy(category,",
+				"     skipDuplicateMapOutputs: true) ~> CategoryAndSubcategory",
+				"CategoryAndSubcategory aggregate(groupBy(category,",
 				"          subCategory),",
-				"     count = count()) ~> aggregate2",
-				"surrogateKey1 select(mapColumn(",
+				"     count = count()) ~> groupBySubcategory",
+				"addId select(mapColumn(",
 				"          id,",
 				"          category",
 				"     ),",
 				"     skipDuplicateMapInputs: true,",
 				"     skipDuplicateMapOutputs: true) ~> MainCategory",
-				"aggregate2, MainCategory lookup(aggregate2@category == MainCategory@category,",
+				"groupBySubcategory, MainCategory lookup(groupBySubcategory@category == MainCategory@category,",
 				"     multiple: false,",
 				"     pickup: 'any',",
-				"     broadcast: 'auto')~> lookup1",
-				"select10 keyGenerate(output(id as long),",
+				"     broadcast: 'auto')~> lookupMainCategory",
+				"IdAndSubcategory keyGenerate(output(id as long),",
 				"     startAt: 1L,",
-				"     stepValue: 1L) ~> surrogateKey2",
+				"     stepValue: 1L) ~> IdForSubcategury",
 				"poducts select(mapColumn(",
 				"          category,",
 				"          subCategory,",
@@ -183,26 +183,26 @@
 				"          seriesCategoryName",
 				"     ),",
 				"     skipDuplicateMapInputs: true,",
-				"     skipDuplicateMapOutputs: true) ~> select4",
-				"select4 aggregate(groupBy(category,",
+				"     skipDuplicateMapOutputs: true) ~> seriesCategory",
+				"seriesCategory aggregate(groupBy(category,",
 				"          subCategory,",
 				"          seriesCategoryCode,",
 				"          seriesCategoryName),",
-				"     count = count()) ~> aggregate3",
-				"aggregate3, select8 lookup(aggregate3@subCategory == select8@subCategory,",
+				"     count = count()) ~> groupBySeriescategory",
+				"groupBySeriescategory, reorderColumnsForSub lookup(groupBySeriescategory@subCategory == reorderColumnsForSub@subCategory,",
 				"     multiple: false,",
 				"     pickup: 'any',",
-				"     broadcast: 'auto')~> lookup2",
-				"lookup2 select(mapColumn(",
+				"     broadcast: 'auto')~> addSubcategoryId",
+				"addSubcategoryId select(mapColumn(",
 				"          sub_category_id = id,",
 				"          seriesCategoryCode,",
 				"          seriesCategoryName",
 				"     ),",
 				"     skipDuplicateMapInputs: true,",
-				"     skipDuplicateMapOutputs: true) ~> select5",
-				"select5 keyGenerate(output(id as long),",
+				"     skipDuplicateMapOutputs: true) ~> removeUnnecessaryColumns",
+				"removeUnnecessaryColumns keyGenerate(output(id as long),",
 				"     startAt: 1L,",
-				"     stepValue: 1L) ~> surrogateKey3",
+				"     stepValue: 1L) ~> IdForSubcategory",
 				"poducts select(mapColumn(",
 				"          seriesCategoryCode,",
 				"          productCode = seriesCode,",
@@ -220,33 +220,33 @@
 				"          specialShipmentFlag",
 				"     ),",
 				"     skipDuplicateMapInputs: true,",
-				"     skipDuplicateMapOutputs: true) ~> select6",
-				"select13, select9 lookup(select13@seriesCategoryCode == select9@seriesCategoryCode,",
+				"     skipDuplicateMapOutputs: true) ~> selectProducts",
+				"removeDuplicateColumn, reorderColumnForSeries lookup(removeDuplicateColumn@seriesCategoryCode == reorderColumnForSeries@seriesCategoryCode,",
 				"     multiple: false,",
 				"     pickup: 'any',",
-				"     broadcast: 'auto')~> lookup3",
-				"surrogateKey2 select(mapColumn(",
+				"     broadcast: 'auto')~> addSeriescategoryId",
+				"IdForSubcategury select(mapColumn(",
 				"          id,",
 				"          category_id,",
 				"          subCategory",
 				"     ),",
 				"     skipDuplicateMapInputs: true,",
-				"     skipDuplicateMapOutputs: true) ~> select8",
-				"surrogateKey3 select(mapColumn(",
+				"     skipDuplicateMapOutputs: true) ~> reorderColumnsForSub",
+				"IdForSubcategory select(mapColumn(",
 				"          id,",
 				"          sub_category_id,",
 				"          seriesCategoryCode,",
 				"          seriesCategoryName",
 				"     ),",
 				"     skipDuplicateMapInputs: true,",
-				"     skipDuplicateMapOutputs: true) ~> select9",
-				"lookup1 select(mapColumn(",
+				"     skipDuplicateMapOutputs: true) ~> reorderColumnForSeries",
+				"lookupMainCategory select(mapColumn(",
 				"          category_id = id,",
 				"          subCategory",
 				"     ),",
 				"     skipDuplicateMapInputs: true,",
-				"     skipDuplicateMapOutputs: true) ~> select10",
-				"lookup3 select(mapColumn(",
+				"     skipDuplicateMapOutputs: true) ~> IdAndSubcategory",
+				"addSeriescategoryId select(mapColumn(",
 				"          sub_category_id,",
 				"          series_category_id = id,",
 				"          productCode,",
@@ -264,12 +264,12 @@
 				"          specialShipmentFlag",
 				"     ),",
 				"     skipDuplicateMapInputs: true,",
-				"     skipDuplicateMapOutputs: true) ~> select11",
-				"select11, select8 lookup(sub_category_id == id,",
+				"     skipDuplicateMapOutputs: true) ~> removeColumnsProducts",
+				"removeColumnsProducts, reorderColumnsForSub lookup(sub_category_id == id,",
 				"     multiple: false,",
 				"     pickup: 'any',",
-				"     broadcast: 'auto')~> lookup4",
-				"lookup4 select(mapColumn(",
+				"     broadcast: 'auto')~> addSubcategiryAndCategoryId",
+				"addSubcategiryAndCategoryId select(mapColumn(",
 				"          category_id,",
 				"          sub_category_id,",
 				"          series_category_id,",
@@ -288,12 +288,12 @@
 				"          specialShipmentFlag",
 				"     ),",
 				"     skipDuplicateMapInputs: true,",
-				"     skipDuplicateMapOutputs: true) ~> select12",
-				"select6 window(over(productCode),",
+				"     skipDuplicateMapOutputs: true) ~> removeAbundantColumns",
+				"selectProducts window(over(productCode),",
 				"     asc(productCode, true),",
-				"     RNK = rowNumber()) ~> window1",
-				"window1 filter(RNK==1) ~> filter1",
-				"filter1 select(mapColumn(",
+				"     RNK = rowNumber()) ~> overProductCode",
+				"overProductCode filter(RNK==1) ~> removeDuplicates",
+				"removeDuplicates select(mapColumn(",
 				"          seriesCategoryCode,",
 				"          productCode,",
 				"          productName,",
@@ -310,8 +310,8 @@
 				"          specialShipmentFlag",
 				"     ),",
 				"     skipDuplicateMapInputs: true,",
-				"     skipDuplicateMapOutputs: true) ~> select13",
-				"select8 sink(allowSchemaDrift: true,",
+				"     skipDuplicateMapOutputs: true) ~> removeDuplicateColumn",
+				"reorderColumnsForSub sink(allowSchemaDrift: true,",
 				"     validateSchema: false,",
 				"     deletable:false,",
 				"     insertable:true,",
@@ -333,7 +333,7 @@
 				"     skipDuplicateMapInputs: true,",
 				"     skipDuplicateMapOutputs: true,",
 				"     errorHandlingOption: 'stopOnFirstError') ~> mainCategorySink",
-				"select9 sink(allowSchemaDrift: true,",
+				"reorderColumnForSeries sink(allowSchemaDrift: true,",
 				"     validateSchema: false,",
 				"     deletable:false,",
 				"     insertable:true,",
@@ -344,7 +344,7 @@
 				"     skipDuplicateMapInputs: true,",
 				"     skipDuplicateMapOutputs: true,",
 				"     errorHandlingOption: 'stopOnFirstError') ~> seriesCategorySink",
-				"select12 sink(allowSchemaDrift: true,",
+				"removeAbundantColumns sink(allowSchemaDrift: true,",
 				"     validateSchema: false,",
 				"     deletable:false,",
 				"     insertable:true,",

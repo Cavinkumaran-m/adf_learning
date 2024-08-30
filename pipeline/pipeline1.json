@@ -5,8 +5,6 @@
 			{
 				"name": "blob to raw",
 				"type": "Copy",
-				"state": "Inactive",
-				"onInactiveMarkAs": "Succeeded",
 				"dependsOn": [
 					{
 						"activity": "Notebook1",
@@ -75,8 +73,6 @@
 			{
 				"name": "raw to prep",
 				"type": "Copy",
-				"state": "Inactive",
-				"onInactiveMarkAs": "Succeeded",
 				"dependsOn": [
 					{
 						"activity": "blob to raw",
@@ -141,8 +137,6 @@
 			{
 				"name": "dataflow3",
 				"type": "ExecuteDataFlow",
-				"state": "Inactive",
-				"onInactiveMarkAs": "Succeeded",
 				"dependsOn": [
 					{
 						"activity": "raw to prep",

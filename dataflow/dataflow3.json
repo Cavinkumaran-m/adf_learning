@@ -108,6 +108,9 @@
 				},
 				{
 					"name": "select12"
+				},
+				{
+					"name": "removingDuplicates"
 				}
 			],
 			"scriptLines": [
@@ -212,7 +215,7 @@
 				"     ),",
 				"     skipDuplicateMapInputs: true,",
 				"     skipDuplicateMapOutputs: true) ~> select6",
-				"select6, select9 lookup(select6@seriesCategoryCode == select9@seriesCategoryCode,",
+				"removingDuplicates, select9 lookup(removingDuplicates@seriesCategoryCode == select9@seriesCategoryCode,",
 				"     multiple: false,",
 				"     pickup: 'any',",
 				"     broadcast: 'auto')~> lookup3",
@@ -280,6 +283,7 @@
 				"     ),",
 				"     skipDuplicateMapInputs: true,",
 				"     skipDuplicateMapOutputs: true) ~> select12",
+				"select6 aggregate(each(match(name!='productCode'), $$ = first($$))) ~> removingDuplicates",
 				"select8 sink(allowSchemaDrift: true,",
 				"     validateSchema: false,",
 				"     deletable:false,",

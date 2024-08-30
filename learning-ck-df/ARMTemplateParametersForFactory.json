@@ -8,8 +8,38 @@
 		"LS_BLOB_connectionString": {
 			"value": ""
 		},
+		"LS_DATABRICKS_accessToken": {
+			"value": ""
+		},
+		"LS_MISUMI_password": {
+			"value": ""
+		},
+		"LS_SQL_SHELF_TALK_password": {
+			"value": ""
+		},
 		"LS_SQL_TEST_password": {
 			"value": ""
+		},
+		"LS_DATABRICKS_properties_typeProperties_existingClusterId": {
+			"value": "0829-095959-sbqxu5so"
+		},
+		"LS_MISUMI_properties_typeProperties_server": {
+			"value": "learning-ck-sql-server.database.windows.net"
+		},
+		"LS_MISUMI_properties_typeProperties_database": {
+			"value": "misumi"
+		},
+		"LS_MISUMI_properties_typeProperties_userName": {
+			"value": "Cavinkumaran1257"
+		},
+		"LS_SQL_SHELF_TALK_properties_typeProperties_server": {
+			"value": "learning-ck-sql-server.database.windows.net"
+		},
+		"LS_SQL_SHELF_TALK_properties_typeProperties_database": {
+			"value": "shelf_talk"
+		},
+		"LS_SQL_SHELF_TALK_properties_typeProperties_userName": {
+			"value": "Cavinkumaran1257"
 		},
 		"LS_SQL_TEST_properties_typeProperties_server": {
 			"value": "learning-ck-sql-server.database.windows.net"

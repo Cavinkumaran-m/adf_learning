@@ -11,9 +11,49 @@
 			"type": "secureString",
 			"metadata": "Secure string for 'connectionString' of 'LS_BLOB'"
 		},
+		"LS_DATABRICKS_accessToken": {
+			"type": "secureString",
+			"metadata": "Secure string for 'accessToken' of 'LS_DATABRICKS'"
+		},
+		"LS_MISUMI_password": {
+			"type": "secureString",
+			"metadata": "Secure string for 'password' of 'LS_MISUMI'"
+		},
+		"LS_SQL_SHELF_TALK_password": {
+			"type": "secureString",
+			"metadata": "Secure string for 'password' of 'LS_SQL_SHELF_TALK'"
+		},
 		"LS_SQL_TEST_password": {
 			"type": "secureString",
 			"metadata": "Secure string for 'password' of 'LS_SQL_TEST'"
+		},
+		"LS_DATABRICKS_properties_typeProperties_existingClusterId": {
+			"type": "string",
+			"defaultValue": "0829-095959-sbqxu5so"
+		},
+		"LS_MISUMI_properties_typeProperties_server": {
+			"type": "string",
+			"defaultValue": "learning-ck-sql-server.database.windows.net"
+		},
+		"LS_MISUMI_properties_typeProperties_database": {
+			"type": "string",
+			"defaultValue": "misumi"
+		},
+		"LS_MISUMI_properties_typeProperties_userName": {
+			"type": "string",
+			"defaultValue": "Cavinkumaran1257"
+		},
+		"LS_SQL_SHELF_TALK_properties_typeProperties_server": {
+			"type": "string",
+			"defaultValue": "learning-ck-sql-server.database.windows.net"
+		},
+		"LS_SQL_SHELF_TALK_properties_typeProperties_database": {
+			"type": "string",
+			"defaultValue": "shelf_talk"
+		},
+		"LS_SQL_SHELF_TALK_properties_typeProperties_userName": {
+			"type": "string",
+			"defaultValue": "Cavinkumaran1257"
 		},
 		"LS_SQL_TEST_properties_typeProperties_server": {
 			"type": "string",
@@ -57,8 +97,38 @@
 					"LS_BLOB_connectionString": {
 						"value": "[parameters('LS_BLOB_connectionString')]"
 					},
+					"LS_DATABRICKS_accessToken": {
+						"value": "[parameters('LS_DATABRICKS_accessToken')]"
+					},
+					"LS_MISUMI_password": {
+						"value": "[parameters('LS_MISUMI_password')]"
+					},
+					"LS_SQL_SHELF_TALK_password": {
+						"value": "[parameters('LS_SQL_SHELF_TALK_password')]"
+					},
 					"LS_SQL_TEST_password": {
 						"value": "[parameters('LS_SQL_TEST_password')]"
+					},
+					"LS_DATABRICKS_properties_typeProperties_existingClusterId": {
+						"value": "[parameters('LS_DATABRICKS_properties_typeProperties_existingClusterId')]"
+					},
+					"LS_MISUMI_properties_typeProperties_server": {
+						"value": "[parameters('LS_MISUMI_properties_typeProperties_server')]"
+					},
+					"LS_MISUMI_properties_typeProperties_database": {
+						"value": "[parameters('LS_MISUMI_properties_typeProperties_database')]"
+					},
+					"LS_MISUMI_properties_typeProperties_userName": {
+						"value": "[parameters('LS_MISUMI_properties_typeProperties_userName')]"
+					},
+					"LS_SQL_SHELF_TALK_properties_typeProperties_server": {
+						"value": "[parameters('LS_SQL_SHELF_TALK_properties_typeProperties_server')]"
+					},
+					"LS_SQL_SHELF_TALK_properties_typeProperties_database": {
+						"value": "[parameters('LS_SQL_SHELF_TALK_properties_typeProperties_database')]"
+					},
+					"LS_SQL_SHELF_TALK_properties_typeProperties_userName": {
+						"value": "[parameters('LS_SQL_SHELF_TALK_properties_typeProperties_userName')]"
 					},
 					"LS_SQL_TEST_properties_typeProperties_server": {
 						"value": "[parameters('LS_SQL_TEST_properties_typeProperties_server')]"
@@ -72,6 +142,26 @@
 				}
 			},
 			"dependsOn": []
+		},
+		{
+			"name": "learning-ck-df_ArmTemplate_1",
+			"type": "Microsoft.Resources/deployments",
+			"apiVersion": "2018-02-01",
+			"properties": {
+				"mode": "incremental",
+				"templateLink": {
+					"uri": "[concat(parameters('containerUri'), '/ArmTemplate_1.json', parameters('containerSasToken'))]",
+					"contentVersion": "1.0.0.0"
+				},
+				"parameters": {
+					"factoryName": {
+						"value": "[parameters('factoryName')]"
+					}
+				}
+			},
+			"dependsOn": [
+				"[resourceId('Microsoft.Resources/deployments', 'learning-ck-df_ArmTemplate_0')]"
+			]
 		}
 	]
 }

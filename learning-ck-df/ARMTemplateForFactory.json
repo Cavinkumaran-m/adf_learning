@@ -11,9 +11,49 @@
 			"type": "secureString",
 			"metadata": "Secure string for 'connectionString' of 'LS_BLOB'"
 		},
+		"LS_DATABRICKS_accessToken": {
+			"type": "secureString",
+			"metadata": "Secure string for 'accessToken' of 'LS_DATABRICKS'"
+		},
+		"LS_MISUMI_password": {
+			"type": "secureString",
+			"metadata": "Secure string for 'password' of 'LS_MISUMI'"
+		},
+		"LS_SQL_SHELF_TALK_password": {
+			"type": "secureString",
+			"metadata": "Secure string for 'password' of 'LS_SQL_SHELF_TALK'"
+		},
 		"LS_SQL_TEST_password": {
 			"type": "secureString",
 			"metadata": "Secure string for 'password' of 'LS_SQL_TEST'"
+		},
+		"LS_DATABRICKS_properties_typeProperties_existingClusterId": {
+			"type": "string",
+			"defaultValue": "0829-095959-sbqxu5so"
+		},
+		"LS_MISUMI_properties_typeProperties_server": {
+			"type": "string",
+			"defaultValue": "learning-ck-sql-server.database.windows.net"
+		},
+		"LS_MISUMI_properties_typeProperties_database": {
+			"type": "string",
+			"defaultValue": "misumi"
+		},
+		"LS_MISUMI_properties_typeProperties_userName": {
+			"type": "string",
+			"defaultValue": "Cavinkumaran1257"
+		},
+		"LS_SQL_SHELF_TALK_properties_typeProperties_server": {
+			"type": "string",
+			"defaultValue": "learning-ck-sql-server.database.windows.net"
+		},
+		"LS_SQL_SHELF_TALK_properties_typeProperties_database": {
+			"type": "string",
+			"defaultValue": "shelf_talk"
+		},
+		"LS_SQL_SHELF_TALK_properties_typeProperties_userName": {
+			"type": "string",
+			"defaultValue": "Cavinkumaran1257"
 		},
 		"LS_SQL_TEST_properties_typeProperties_server": {
 			"type": "string",
@@ -33,13 +73,13 @@
 	},
 	"resources": [
 		{
-			"name": "[concat(parameters('factoryName'), '/pipeline1')]",
+			"name": "[concat(parameters('factoryName'), '/data cleaning')]",
 			"type": "Microsoft.DataFactory/factories/pipelines",
 			"apiVersion": "2018-06-01",
 			"properties": {
 				"activities": [
 					{
-						"name": "Copy data from csv",
+						"name": "raw_customer  to prep_customer",
 						"type": "Copy",
 						"dependsOn": [],
 						"policy": {
@@ -52,19 +92,13 @@
 						"userProperties": [],
 						"typeProperties": {
 							"source": {
-								"type": "DelimitedTextSource",
-								"storeSettings": {
-									"type": "AzureBlobStorageReadSettings",
-									"recursive": true,
-									"wildcardFileName": "*.csv",
-									"enablePartitionDiscovery": false
-								},
-								"formatSettings": {
-									"type": "DelimitedTextReadSettings"
-								}
+								"type": "AzureSqlSource",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
 							},
 							"sink": {
 								"type": "AzureSqlSink",
+								"preCopyScript": "DROP TABLE IF EXISTS [prep].[customer]",
 								"writeBehavior": "insert",
 								"sqlWriterUseTableLock": false,
 								"tableOption": "autoCreate",
@@ -82,6 +116,655 @@
 						},
 						"inputs": [
 							{
+								"referenceName": "sql_raw_cust",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "sql_prep_cust",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					},
+					{
+						"name": "raw_order  to prep_order",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"sink": {
+								"type": "AzureSqlSink",
+								"preCopyScript": "DROP TABLE IF EXISTS [prep].[order]",
+								"writeBehavior": "insert",
+								"sqlWriterUseTableLock": false,
+								"tableOption": "autoCreate",
+								"disableMetricsCollection": false
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "sql_raw_order",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "sql_prep_order",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					},
+					{
+						"name": "clean_data",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [
+							{
+								"activity": "raw_customer  to prep_customer",
+								"dependencyConditions": [
+									"Completed"
+								]
+							},
+							{
+								"activity": "raw_order  to prep_order",
+								"dependencyConditions": [
+									"Completed"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "clean_data",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"customers": {},
+									"orders": {},
+									"sink1": {},
+									"sink2": {},
+									"sink3": {}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					},
+					{
+						"name": "prep_customer  to report_customer",
+						"type": "Copy",
+						"dependsOn": [
+							{
+								"activity": "clean_data",
+								"dependencyConditions": [
+									"Completed"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"sink": {
+								"type": "AzureSqlSink",
+								"preCopyScript": "DROP TABLE IF EXISTS [report].[customer]",
+								"writeBehavior": "insert",
+								"sqlWriterUseTableLock": false,
+								"tableOption": "autoCreate",
+								"disableMetricsCollection": false
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "sql_prep_cust",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "sql_report_cust",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					},
+					{
+						"name": "prep_order  to report_order",
+						"type": "Copy",
+						"dependsOn": [
+							{
+								"activity": "clean_data",
+								"dependencyConditions": [
+									"Completed"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"sink": {
+								"type": "AzureSqlSink",
+								"preCopyScript": "DROP TABLE IF EXISTS [report].[order]",
+								"writeBehavior": "insert",
+								"sqlWriterUseTableLock": false,
+								"tableOption": "autoCreate",
+								"disableMetricsCollection": false
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "sql_prep_order",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "sql_report_order",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					},
+					{
+						"name": "prep_product  to report_product",
+						"type": "Copy",
+						"dependsOn": [
+							{
+								"activity": "clean_data",
+								"dependencyConditions": [
+									"Completed"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"sink": {
+								"type": "AzureSqlSink",
+								"preCopyScript": "DROP TABLE IF EXISTS [report].[product]",
+								"writeBehavior": "insert",
+								"sqlWriterUseTableLock": false,
+								"tableOption": "autoCreate",
+								"disableMetricsCollection": false
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "sql_prep_product",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "sql_report_product",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"folder": {
+					"name": "others"
+				},
+				"annotations": [],
+				"lastPublishTime": "2024-08-27T08:10:01Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/sql_raw_cust')]",
+				"[concat(variables('factoryId'), '/datasets/sql_prep_cust')]",
+				"[concat(variables('factoryId'), '/datasets/sql_raw_order')]",
+				"[concat(variables('factoryId'), '/datasets/sql_prep_order')]",
+				"[concat(variables('factoryId'), '/dataflows/clean_data')]",
+				"[concat(variables('factoryId'), '/datasets/sql_report_cust')]",
+				"[concat(variables('factoryId'), '/datasets/sql_report_order')]",
+				"[concat(variables('factoryId'), '/datasets/sql_prep_product')]",
+				"[concat(variables('factoryId'), '/datasets/sql_report_product')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/data_analytics')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "ForEach1",
+						"type": "ForEach",
+						"dependsOn": [],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@variables('tablesArray')",
+								"type": "Expression"
+							},
+							"activities": [
+								{
+									"name": "Copy data1",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "AzureSqlSource",
+											"queryTimeout": "02:00:00",
+											"partitionOption": "None"
+										},
+										"sink": {
+											"type": "AzureSqlSink",
+											"preCopyScript": {
+												"value": "drop table if exists [prep].[@{item()}]",
+												"type": "Expression"
+											},
+											"writeBehavior": "insert",
+											"sqlWriterUseTableLock": false,
+											"tableOption": "autoCreate",
+											"disableMetricsCollection": false
+										},
+										"enableStaging": false,
+										"translator": {
+											"type": "TabularTranslator",
+											"typeConversion": true,
+											"typeConversionSettings": {
+												"allowDataTruncation": true,
+												"treatBooleanAsNumber": false
+											}
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "sql_prod_data",
+											"type": "DatasetReference",
+											"parameters": {
+												"tableName": {
+													"value": "@item()",
+													"type": "Expression"
+												}
+											}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "sql_prep_data",
+											"type": "DatasetReference",
+											"parameters": {
+												"tableName": {
+													"value": "@item()",
+													"type": "Expression"
+												}
+											}
+										}
+									]
+								}
+							]
+						}
+					},
+					{
+						"name": "dataflow2",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [
+							{
+								"activity": "ForEach1",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "dataflow2",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"books": {
+										"tableName": "books"
+									},
+									"users": {
+										"tableName": "users"
+									},
+									"ratings": {
+										"tableName": "ratings"
+									},
+									"usersSink": {
+										"tableName": "users"
+									},
+									"booksSink": {
+										"tableName": "books"
+									},
+									"factSink": {
+										"tableName": "fact"
+									},
+									"ratingsSink": {
+										"tableName": "ratings"
+									}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"variables": {
+					"tablesArray": {
+						"type": "Array",
+						"defaultValue": [
+							"books",
+							"users",
+							"ratings"
+						]
+					}
+				},
+				"folder": {
+					"name": "shelf_talk"
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/dataflows/dataflow2')]",
+				"[concat(variables('factoryId'), '/datasets/sql_prod_data')]",
+				"[concat(variables('factoryId'), '/datasets/sql_prep_data')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/files to sql_raw')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "customer input to consolidated",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "DelimitedTextSource",
+								"storeSettings": {
+									"type": "AzureBlobStorageReadSettings",
+									"recursive": true,
+									"wildcardFolderPath": "assessment_1",
+									"wildcardFileName": "*.csv",
+									"enablePartitionDiscovery": false
+								},
+								"formatSettings": {
+									"type": "DelimitedTextReadSettings"
+								}
+							},
+							"sink": {
+								"type": "DelimitedTextSink",
+								"storeSettings": {
+									"type": "AzureBlobStorageWriteSettings",
+									"copyBehavior": "MergeFiles"
+								},
+								"formatSettings": {
+									"type": "DelimitedTextWriteSettings",
+									"quoteAllText": true,
+									"fileExtension": ".txt"
+								}
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"mappings": [
+									{
+										"source": {
+											"name": "CustomerID",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "CustomerID",
+											"type": "String",
+											"physicalType": "nvarchar"
+										}
+									},
+									{
+										"source": {
+											"name": "FirstName",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "FirstName",
+											"type": "String",
+											"physicalType": "nvarchar"
+										}
+									},
+									{
+										"source": {
+											"name": "LastName",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "LastName",
+											"type": "String",
+											"physicalType": "nvarchar"
+										}
+									},
+									{
+										"source": {
+											"name": "Email",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "Email",
+											"type": "String",
+											"physicalType": "nvarchar"
+										}
+									},
+									{
+										"source": {
+											"name": "PhoneNumber",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "PhoneNumber",
+											"type": "String",
+											"physicalType": "nvarchar"
+										}
+									},
+									{
+										"source": {
+											"name": "Address",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "Address",
+											"type": "String",
+											"physicalType": "nvarchar"
+										}
+									},
+									{
+										"source": {
+											"name": "City",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "City",
+											"type": "String",
+											"physicalType": "nvarchar"
+										}
+									},
+									{
+										"source": {
+											"name": "State",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "State",
+											"type": "String",
+											"physicalType": "nvarchar"
+										}
+									},
+									{
+										"source": {
+											"name": "ZipCode",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "ZipCode",
+											"type": "String",
+											"physicalType": "nvarchar"
+										}
+									},
+									{
+										"source": {
+											"name": "Country",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "Country",
+											"type": "String",
+											"physicalType": "nvarchar"
+										}
+									}
+								],
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
 								"referenceName": "cust_csv",
 								"type": "DatasetReference",
 								"parameters": {}
@@ -89,14 +772,14 @@
 						],
 						"outputs": [
 							{
-								"referenceName": "sql_cust",
+								"referenceName": "consolidated_customer",
 								"type": "DatasetReference",
 								"parameters": {}
 							}
 						]
 					},
 					{
-						"name": "Copy data from xlsx",
+						"name": "order input to consolidated",
 						"type": "Copy",
 						"dependsOn": [],
 						"policy": {
@@ -113,16 +796,22 @@
 								"storeSettings": {
 									"type": "AzureBlobStorageReadSettings",
 									"recursive": true,
+									"wildcardFolderPath": "assessment_1",
 									"wildcardFileName": "*.xlsx",
 									"enablePartitionDiscovery": false
 								}
 							},
 							"sink": {
-								"type": "AzureSqlSink",
-								"writeBehavior": "insert",
-								"sqlWriterUseTableLock": false,
-								"tableOption": "autoCreate",
-								"disableMetricsCollection": false
+								"type": "DelimitedTextSink",
+								"storeSettings": {
+									"type": "AzureBlobStorageWriteSettings",
+									"copyBehavior": "MergeFiles"
+								},
+								"formatSettings": {
+									"type": "DelimitedTextWriteSettings",
+									"quoteAllText": true,
+									"fileExtension": ".txt"
+								}
 							},
 							"enableStaging": false,
 							"translator": {
@@ -143,7 +832,261 @@
 						],
 						"outputs": [
 							{
-								"referenceName": "sql_order",
+								"referenceName": "consolidated_order",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					},
+					{
+						"name": "consolidated order to staging area",
+						"type": "Copy",
+						"dependsOn": [
+							{
+								"activity": "order input to consolidated",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "DelimitedTextSource",
+								"storeSettings": {
+									"type": "AzureBlobStorageReadSettings",
+									"recursive": true,
+									"wildcardFolderPath": "order",
+									"wildcardFileName": "*.csv",
+									"enablePartitionDiscovery": false
+								},
+								"formatSettings": {
+									"type": "DelimitedTextReadSettings"
+								}
+							},
+							"sink": {
+								"type": "AzureSqlSink",
+								"preCopyScript": "DROP TABLE IF EXISTS [raw].[order]",
+								"writeBehavior": "insert",
+								"sqlWriterUseTableLock": false,
+								"tableOption": "autoCreate",
+								"disableMetricsCollection": false
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "consolidated_order",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "sql_raw_order",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					},
+					{
+						"name": "consolidated customer to staging area",
+						"type": "Copy",
+						"dependsOn": [
+							{
+								"activity": "customer input to consolidated",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "DelimitedTextSource",
+								"storeSettings": {
+									"type": "AzureBlobStorageReadSettings",
+									"recursive": true,
+									"wildcardFolderPath": "customer",
+									"wildcardFileName": "*.csv",
+									"enablePartitionDiscovery": false
+								},
+								"formatSettings": {
+									"type": "DelimitedTextReadSettings"
+								}
+							},
+							"sink": {
+								"type": "AzureSqlSink",
+								"preCopyScript": "DROP TABLE IF EXISTS [raw].[customer]",
+								"writeBehavior": "insert",
+								"sqlWriterUseTableLock": false,
+								"tableOption": "autoCreate",
+								"disableMetricsCollection": false
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"mappings": [
+									{
+										"source": {
+											"name": "CustomerID",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "CustomerID",
+											"type": "String",
+											"physicalType": "nvarchar"
+										}
+									},
+									{
+										"source": {
+											"name": "FirstName",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "FirstName",
+											"type": "String",
+											"physicalType": "nvarchar"
+										}
+									},
+									{
+										"source": {
+											"name": "LastName",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "LastName",
+											"type": "String",
+											"physicalType": "nvarchar"
+										}
+									},
+									{
+										"source": {
+											"name": "Email",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "Email",
+											"type": "String",
+											"physicalType": "nvarchar"
+										}
+									},
+									{
+										"source": {
+											"name": "PhoneNumber",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "PhoneNumber",
+											"type": "String",
+											"physicalType": "nvarchar"
+										}
+									},
+									{
+										"source": {
+											"name": "Address",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "Address",
+											"type": "String",
+											"physicalType": "nvarchar"
+										}
+									},
+									{
+										"source": {
+											"name": "City",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "City",
+											"type": "String",
+											"physicalType": "nvarchar"
+										}
+									},
+									{
+										"source": {
+											"name": "State",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "State",
+											"type": "String",
+											"physicalType": "nvarchar"
+										}
+									},
+									{
+										"source": {
+											"name": "ZipCode",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "ZipCode",
+											"type": "String",
+											"physicalType": "nvarchar"
+										}
+									},
+									{
+										"source": {
+											"name": "Country",
+											"type": "String",
+											"physicalType": "String"
+										},
+										"sink": {
+											"name": "Country",
+											"type": "String",
+											"physicalType": "nvarchar"
+										}
+									}
+								],
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "consolidated_customer",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "sql_raw_cust",
 								"type": "DatasetReference",
 								"parameters": {}
 							}
@@ -153,26 +1096,171 @@
 				"policy": {
 					"elapsedTimeMetric": {}
 				},
+				"folder": {
+					"name": "others"
+				},
 				"annotations": [],
 				"lastPublishTime": "2024-08-27T08:10:01Z"
 			},
 			"dependsOn": [
 				"[concat(variables('factoryId'), '/datasets/cust_csv')]",
-				"[concat(variables('factoryId'), '/datasets/sql_cust')]",
+				"[concat(variables('factoryId'), '/datasets/consolidated_customer')]",
 				"[concat(variables('factoryId'), '/datasets/order_xlsx')]",
-				"[concat(variables('factoryId'), '/datasets/sql_order')]"
+				"[concat(variables('factoryId'), '/datasets/consolidated_order')]",
+				"[concat(variables('factoryId'), '/datasets/sql_raw_order')]",
+				"[concat(variables('factoryId'), '/datasets/sql_raw_cust')]"
 			]
 		},
 		{
-			"name": "[concat(parameters('factoryName'), '/pipeline2')]",
+			"name": "[concat(parameters('factoryName'), '/pipeline1')]",
 			"type": "Microsoft.DataFactory/factories/pipelines",
 			"apiVersion": "2018-06-01",
 			"properties": {
 				"activities": [
 					{
-						"name": "Data flow1",
+						"name": "blob to raw",
+						"type": "Copy",
+						"dependsOn": [
+							{
+								"activity": "Notebook1",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "DelimitedTextSource",
+								"storeSettings": {
+									"type": "AzureBlobStorageReadSettings",
+									"recursive": true,
+									"wildcardFolderPath": "misumi",
+									"wildcardFileName": "products.csv",
+									"enablePartitionDiscovery": false
+								},
+								"formatSettings": {
+									"type": "DelimitedTextReadSettings"
+								}
+							},
+							"sink": {
+								"type": "AzureSqlSink",
+								"preCopyScript": "drop table if exists [raw].[products]",
+								"writeBehavior": "insert",
+								"sqlWriterUseTableLock": false,
+								"tableOption": "autoCreate",
+								"disableMetricsCollection": false
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "misumi_csv",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "misumi_sql_data",
+								"type": "DatasetReference",
+								"parameters": {
+									"schemaName": "raw",
+									"tableName": "products"
+								}
+							}
+						]
+					},
+					{
+						"name": "raw to prep",
+						"type": "Copy",
+						"dependsOn": [
+							{
+								"activity": "blob to raw",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"sink": {
+								"type": "AzureSqlSink",
+								"preCopyScript": "drop table if exists [prep].[products]",
+								"writeBehavior": "insert",
+								"sqlWriterUseTableLock": false,
+								"tableOption": "autoCreate",
+								"disableMetricsCollection": false
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "misumi_sql_data",
+								"type": "DatasetReference",
+								"parameters": {
+									"schemaName": "raw",
+									"tableName": "products"
+								}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "misumi_sql_data",
+								"type": "DatasetReference",
+								"parameters": {
+									"schemaName": "prep",
+									"tableName": "products"
+								}
+							}
+						]
+					},
+					{
+						"name": "dataflow3",
 						"type": "ExecuteDataFlow",
-						"dependsOn": [],
+						"dependsOn": [
+							{
+								"activity": "raw to prep",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
 						"policy": {
 							"timeout": "0.12:00:00",
 							"retry": 0,
@@ -183,12 +1271,296 @@
 						"userProperties": [],
 						"typeProperties": {
 							"dataflow": {
-								"referenceName": "update_price",
+								"referenceName": "dataflow3",
 								"type": "DataFlowReference",
 								"parameters": {},
 								"datasetParameters": {
-									"orders": {},
-									"sink": {}
+									"poducts": {
+										"schemaName": "prep",
+										"tableName": "products"
+									},
+									"subCategorySink": {
+										"schemaName": "report",
+										"tableName": "subcategory"
+									},
+									"mainCategorySink": {
+										"schemaName": "report",
+										"tableName": "category"
+									},
+									"seriesCategorySink": {
+										"schemaName": "report",
+										"tableName": "seriescategory"
+									},
+									"productsSink": {
+										"schemaName": "report",
+										"tableName": "products"
+									}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					},
+					{
+						"name": "Notebook1",
+						"type": "DatabricksNotebook",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"notebookPath": "/Users/cavin.k@jmangroup.com/misumi_web_scrape"
+						},
+						"linkedServiceName": {
+							"referenceName": "LS_DATABRICKS",
+							"type": "LinkedServiceReference"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"variables": {
+					"fileNames": {
+						"type": "Array",
+						"defaultValue": [
+							"products",
+							"tools",
+							"industries"
+						]
+					}
+				},
+				"folder": {
+					"name": "misumi"
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/misumi_csv')]",
+				"[concat(variables('factoryId'), '/datasets/misumi_sql_data')]",
+				"[concat(variables('factoryId'), '/dataflows/dataflow3')]",
+				"[concat(variables('factoryId'), '/linkedServices/LS_DATABRICKS')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/shelf_talk_data_init')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "ForEach1",
+						"type": "ForEach",
+						"dependsOn": [],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@variables('tablesArray')",
+								"type": "Expression"
+							},
+							"activities": [
+								{
+									"name": "Copy data2",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "DelimitedTextSource",
+											"storeSettings": {
+												"type": "AzureBlobStorageReadSettings",
+												"recursive": true,
+												"wildcardFolderPath": "shelf_talk",
+												"wildcardFileName": {
+													"value": "@concat(item(), '.csv')",
+													"type": "Expression"
+												},
+												"enablePartitionDiscovery": false
+											},
+											"formatSettings": {
+												"type": "DelimitedTextReadSettings"
+											}
+										},
+										"sink": {
+											"type": "AzureSqlSink",
+											"preCopyScript": {
+												"value": "drop table if exists [prod].[@{item()}]",
+												"type": "Expression"
+											},
+											"writeBehavior": "insert",
+											"sqlWriterUseTableLock": false,
+											"tableOption": "autoCreate",
+											"disableMetricsCollection": false
+										},
+										"enableStaging": false,
+										"translator": {
+											"type": "TabularTranslator",
+											"typeConversion": true,
+											"typeConversionSettings": {
+												"allowDataTruncation": true,
+												"treatBooleanAsNumber": false
+											}
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "shelf_talk_csv",
+											"type": "DatasetReference",
+											"parameters": {}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "sql_prod_data",
+											"type": "DatasetReference",
+											"parameters": {
+												"tableName": {
+													"value": "@item()",
+													"type": "Expression"
+												}
+											}
+										}
+									]
+								}
+							]
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"variables": {
+					"FileName": {
+						"type": "String"
+					},
+					"tablesArray": {
+						"type": "Array",
+						"defaultValue": [
+							"books",
+							"users",
+							"ratings"
+						]
+					}
+				},
+				"folder": {
+					"name": "shelf_talk"
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/shelf_talk_csv')]",
+				"[concat(variables('factoryId'), '/datasets/sql_prod_data')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/store')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "blob to raw_store",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "DelimitedTextSource",
+								"storeSettings": {
+									"type": "AzureBlobStorageReadSettings",
+									"recursive": true,
+									"enablePartitionDiscovery": false
+								},
+								"formatSettings": {
+									"type": "DelimitedTextReadSettings"
+								}
+							},
+							"sink": {
+								"type": "AzureSqlSink",
+								"preCopyScript": "drop table if exists [raw].[store]",
+								"writeBehavior": "insert",
+								"sqlWriterUseTableLock": false,
+								"tableOption": "autoCreate",
+								"disableMetricsCollection": false
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "store_csv",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "sql_raw_store",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					},
+					{
+						"name": "dataflow1",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [
+							{
+								"activity": "blob to raw_store",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "dataflow1",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"source1": {},
+									"source2": {},
+									"sink1": {},
+									"sink2": {},
+									"sink3": {}
 								}
 							},
 							"staging": {},
@@ -203,15 +1575,19 @@
 				"policy": {
 					"elapsedTimeMetric": {}
 				},
-				"annotations": [],
-				"lastPublishTime": "2024-08-27T08:10:01Z"
+				"folder": {
+					"name": "others"
+				},
+				"annotations": []
 			},
 			"dependsOn": [
-				"[concat(variables('factoryId'), '/dataflows/update_price')]"
+				"[concat(variables('factoryId'), '/datasets/store_csv')]",
+				"[concat(variables('factoryId'), '/datasets/sql_raw_store')]",
+				"[concat(variables('factoryId'), '/dataflows/dataflow1')]"
 			]
 		},
 		{
-			"name": "[concat(parameters('factoryName'), '/blob_output_cust')]",
+			"name": "[concat(parameters('factoryName'), '/consolidated_customer')]",
 			"type": "Microsoft.DataFactory/factories/datasets",
 			"apiVersion": "2018-06-01",
 			"properties": {
@@ -219,14 +1595,17 @@
 					"referenceName": "LS_BLOB",
 					"type": "LinkedServiceReference"
 				},
+				"folder": {
+					"name": "other"
+				},
 				"annotations": [],
 				"type": "DelimitedText",
 				"typeProperties": {
 					"location": {
 						"type": "AzureBlobStorageLocation",
 						"fileName": "customer.csv",
-						"folderPath": "cust",
-						"container": "consolidated-files"
+						"folderPath": "customer",
+						"container": "consolidated"
 					},
 					"columnDelimiter": ",",
 					"escapeChar": "\\",
@@ -240,7 +1619,7 @@
 			]
 		},
 		{
-			"name": "[concat(parameters('factoryName'), '/blob_output_order')]",
+			"name": "[concat(parameters('factoryName'), '/consolidated_order')]",
 			"type": "Microsoft.DataFactory/factories/datasets",
 			"apiVersion": "2018-06-01",
 			"properties": {
@@ -248,14 +1627,17 @@
 					"referenceName": "LS_BLOB",
 					"type": "LinkedServiceReference"
 				},
+				"folder": {
+					"name": "other"
+				},
 				"annotations": [],
 				"type": "DelimitedText",
 				"typeProperties": {
 					"location": {
 						"type": "AzureBlobStorageLocation",
-						"fileName": "consolidated_order.csv",
+						"fileName": "order.csv",
 						"folderPath": "order",
-						"container": "consolidated-files"
+						"container": "consolidated"
 					},
 					"columnDelimiter": ",",
 					"escapeChar": "\\",
@@ -277,12 +1659,16 @@
 					"referenceName": "LS_BLOB",
 					"type": "LinkedServiceReference"
 				},
+				"folder": {
+					"name": "other"
+				},
 				"annotations": [],
 				"type": "DelimitedText",
 				"typeProperties": {
 					"location": {
 						"type": "AzureBlobStorageLocation",
-						"container": "training"
+						"folderPath": "assessment_1",
+						"container": "input"
 					},
 					"columnDelimiter": ",",
 					"escapeChar": "\\",
@@ -296,6 +1682,75 @@
 			]
 		},
 		{
+			"name": "[concat(parameters('factoryName'), '/misumi_csv')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_BLOB",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "misumi"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"folderPath": "misumi",
+						"container": "input"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LS_BLOB')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/misumi_sql_data')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_MISUMI",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"schemaName": {
+						"type": "string"
+					},
+					"tableName": {
+						"type": "string"
+					}
+				},
+				"folder": {
+					"name": "misumi"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [],
+				"typeProperties": {
+					"schema": {
+						"value": "@dataset().schemaName",
+						"type": "Expression"
+					},
+					"table": {
+						"value": "@dataset().tableName",
+						"type": "Expression"
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LS_MISUMI')]"
+			]
+		},
+		{
 			"name": "[concat(parameters('factoryName'), '/order_xlsx')]",
 			"type": "Microsoft.DataFactory/factories/datasets",
 			"apiVersion": "2018-06-01",
@@ -304,13 +1759,17 @@
 					"referenceName": "LS_BLOB",
 					"type": "LinkedServiceReference"
 				},
+				"folder": {
+					"name": "other"
+				},
 				"annotations": [],
 				"type": "Excel",
 				"typeProperties": {
 					"sheetName": "Sheet1",
 					"location": {
 						"type": "AzureBlobStorageLocation",
-						"container": "training"
+						"folderPath": "assessment_1",
+						"container": "input"
 					},
 					"firstRowAsHeader": true
 				},
@@ -321,13 +1780,284 @@
 			]
 		},
 		{
-			"name": "[concat(parameters('factoryName'), '/sql_cust')]",
+			"name": "[concat(parameters('factoryName'), '/shelf_talk_csv')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_BLOB",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "shelf_talk"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"folderPath": "shelf_talk",
+						"container": "input"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LS_BLOB')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/sql_prep_ass2_customer')]",
 			"type": "Microsoft.DataFactory/factories/datasets",
 			"apiVersion": "2018-06-01",
 			"properties": {
 				"linkedServiceName": {
 					"referenceName": "LS_SQL_TEST",
 					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "other"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [],
+				"typeProperties": {
+					"schema": "prep",
+					"table": "ass2_customer"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LS_SQL_TEST')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/sql_prep_ass2_order')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_SQL_TEST",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "other"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [],
+				"typeProperties": {
+					"schema": "prep",
+					"table": "ass2_order"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LS_SQL_TEST')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/sql_prep_ass2_product')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_SQL_TEST",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "other"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [],
+				"typeProperties": {
+					"schema": "prep",
+					"table": "ass2_product"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LS_SQL_TEST')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/sql_prep_cust')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_SQL_TEST",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "other"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [],
+				"typeProperties": {
+					"schema": "prep",
+					"table": "customer"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LS_SQL_TEST')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/sql_prep_data')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_SQL_SHELF_TALK",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"tableName": {
+						"type": "string"
+					}
+				},
+				"folder": {
+					"name": "shelf_talk"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [],
+				"typeProperties": {
+					"schema": "prep",
+					"table": {
+						"value": "@dataset().tableName",
+						"type": "Expression"
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LS_SQL_SHELF_TALK')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/sql_prep_order')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_SQL_TEST",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "other"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "OrderID",
+						"type": "nvarchar"
+					},
+					{
+						"name": "ProductID",
+						"type": "nvarchar"
+					},
+					{
+						"name": "ProductName",
+						"type": "nvarchar"
+					},
+					{
+						"name": "Quantity",
+						"type": "nvarchar"
+					},
+					{
+						"name": "OrderTimestamp",
+						"type": "nvarchar"
+					},
+					{
+						"name": "Price",
+						"type": "nvarchar"
+					},
+					{
+						"name": "CustomerID",
+						"type": "nvarchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "prep",
+					"table": "order"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LS_SQL_TEST')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/sql_prep_product')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_SQL_TEST",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "other"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [],
+				"typeProperties": {
+					"schema": "prep",
+					"table": "product"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LS_SQL_TEST')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/sql_prod_data')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_SQL_SHELF_TALK",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"tableName": {
+						"type": "string"
+					}
+				},
+				"folder": {
+					"name": "shelf_talk"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [],
+				"typeProperties": {
+					"schema": "prod",
+					"table": {
+						"value": "@dataset().tableName",
+						"type": "Expression"
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LS_SQL_SHELF_TALK')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/sql_raw_cust')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_SQL_TEST",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "other"
 				},
 				"annotations": [],
 				"type": "AzureSqlTable",
@@ -342,7 +2072,7 @@
 			]
 		},
 		{
-			"name": "[concat(parameters('factoryName'), '/sql_order')]",
+			"name": "[concat(parameters('factoryName'), '/sql_raw_order')]",
 			"type": "Microsoft.DataFactory/factories/datasets",
 			"apiVersion": "2018-06-01",
 			"properties": {
@@ -350,12 +2080,172 @@
 					"referenceName": "LS_SQL_TEST",
 					"type": "LinkedServiceReference"
 				},
+				"folder": {
+					"name": "other"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "OrderID",
+						"type": "nvarchar"
+					},
+					{
+						"name": "ProductID",
+						"type": "nvarchar"
+					},
+					{
+						"name": "ProductName",
+						"type": "nvarchar"
+					},
+					{
+						"name": "Quantity",
+						"type": "nvarchar"
+					},
+					{
+						"name": "OrderTimestamp",
+						"type": "nvarchar"
+					},
+					{
+						"name": "Price",
+						"type": "nvarchar"
+					},
+					{
+						"name": "CustomerID",
+						"type": "nvarchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "raw",
+					"table": "order"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LS_SQL_TEST')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/sql_raw_store')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_SQL_TEST",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "other"
+				},
 				"annotations": [],
 				"type": "AzureSqlTable",
 				"schema": [],
 				"typeProperties": {
 					"schema": "raw",
+					"table": "store"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LS_SQL_TEST')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/sql_report_cust')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_SQL_TEST",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "other"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [],
+				"typeProperties": {
+					"schema": "report",
+					"table": "customer"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LS_SQL_TEST')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/sql_report_data')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_SQL_SHELF_TALK",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"tableName": {
+						"type": "string"
+					}
+				},
+				"folder": {
+					"name": "shelf_talk"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [],
+				"typeProperties": {
+					"schema": "report",
+					"table": {
+						"value": "@dataset().tableName",
+						"type": "Expression"
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LS_SQL_SHELF_TALK')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/sql_report_order')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_SQL_TEST",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "other"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [],
+				"typeProperties": {
+					"schema": "report",
 					"table": "order"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LS_SQL_TEST')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/sql_report_product')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_SQL_TEST",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "other"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [],
+				"typeProperties": {
+					"schema": "report",
+					"table": "product"
 				}
 			},
 			"dependsOn": [
@@ -371,6 +2261,9 @@
 					"referenceName": "LS_SQL_TEST",
 					"type": "LinkedServiceReference"
 				},
+				"folder": {
+					"name": "other"
+				},
 				"annotations": [],
 				"type": "AzureSqlTable",
 				"schema": [],
@@ -384,6 +2277,38 @@
 			]
 		},
 		{
+			"name": "[concat(parameters('factoryName'), '/store_csv')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_BLOB",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "other"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"fileName": "240826 Superstore.csv",
+						"folderPath": "assessment_2",
+						"container": "input"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LS_BLOB')]"
+			]
+		},
+		{
 			"name": "[concat(parameters('factoryName'), '/LS_BLOB')]",
 			"type": "Microsoft.DataFactory/factories/linkedServices",
 			"apiVersion": "2018-06-01",
@@ -392,6 +2317,68 @@
 				"type": "AzureBlobStorage",
 				"typeProperties": {
 					"connectionString": "[parameters('LS_BLOB_connectionString')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/LS_DATABRICKS')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureDatabricks",
+				"typeProperties": {
+					"domain": "https://adb-155898135982388.8.azuredatabricks.net",
+					"accessToken": {
+						"type": "SecureString",
+						"value": "[parameters('LS_DATABRICKS_accessToken')]"
+					},
+					"existingClusterId": "[parameters('LS_DATABRICKS_properties_typeProperties_existingClusterId')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/LS_MISUMI')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureSqlDatabase",
+				"typeProperties": {
+					"server": "[parameters('LS_MISUMI_properties_typeProperties_server')]",
+					"database": "[parameters('LS_MISUMI_properties_typeProperties_database')]",
+					"encrypt": "mandatory",
+					"trustServerCertificate": false,
+					"authenticationType": "SQL",
+					"userName": "[parameters('LS_MISUMI_properties_typeProperties_userName')]",
+					"password": {
+						"type": "SecureString",
+						"value": "[parameters('LS_MISUMI_password')]"
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/LS_SQL_SHELF_TALK')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureSqlDatabase",
+				"typeProperties": {
+					"server": "[parameters('LS_SQL_SHELF_TALK_properties_typeProperties_server')]",
+					"database": "[parameters('LS_SQL_SHELF_TALK_properties_typeProperties_database')]",
+					"encrypt": "mandatory",
+					"trustServerCertificate": false,
+					"authenticationType": "SQL",
+					"userName": "[parameters('LS_SQL_SHELF_TALK_properties_typeProperties_userName')]",
+					"password": {
+						"type": "SecureString",
+						"value": "[parameters('LS_SQL_SHELF_TALK_password')]"
+					}
 				}
 			},
 			"dependsOn": []
@@ -419,16 +2406,26 @@
 			"dependsOn": []
 		},
 		{
-			"name": "[concat(parameters('factoryName'), '/update_price')]",
+			"name": "[concat(parameters('factoryName'), '/clean_data')]",
 			"type": "Microsoft.DataFactory/factories/dataflows",
 			"apiVersion": "2018-06-01",
 			"properties": {
+				"folder": {
+					"name": "other"
+				},
 				"type": "MappingDataFlow",
 				"typeProperties": {
 					"sources": [
 						{
 							"dataset": {
-								"referenceName": "sql_order",
+								"referenceName": "sql_prep_cust",
+								"type": "DatasetReference"
+							},
+							"name": "customers"
+						},
+						{
+							"dataset": {
+								"referenceName": "sql_prep_order",
 								"type": "DatasetReference"
 							},
 							"name": "orders"
@@ -437,24 +2434,66 @@
 					"sinks": [
 						{
 							"dataset": {
-								"referenceName": "sql_updated_order",
+								"referenceName": "sql_prep_cust",
 								"type": "DatasetReference"
 							},
-							"name": "sink"
+							"name": "sink1"
+						},
+						{
+							"dataset": {
+								"referenceName": "sql_prep_order",
+								"type": "DatasetReference"
+							},
+							"name": "sink2"
+						},
+						{
+							"dataset": {
+								"referenceName": "sql_prep_product",
+								"type": "DatasetReference"
+							},
+							"name": "sink3"
 						}
 					],
 					"transformations": [
 						{
-							"name": "updateQuantity"
+							"name": "aggregate1"
 						},
 						{
-							"name": "findUnitPrice"
+							"name": "filter1"
 						},
 						{
-							"name": "findUpdatedPrice"
+							"name": "select1"
+						},
+						{
+							"name": "filter2"
+						},
+						{
+							"name": "derivedColumn1"
+						},
+						{
+							"name": "select2"
+						},
+						{
+							"name": "aggregate2"
 						}
 					],
 					"scriptLines": [
+						"source(output(",
+						"          CustomerID as string,",
+						"          FirstName as string,",
+						"          LastName as string,",
+						"          Email as string,",
+						"          PhoneNumber as string,",
+						"          Address as string,",
+						"          City as string,",
+						"          State as string,",
+						"          ZipCode as string,",
+						"          Country as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> customers",
 						"source(output(",
 						"          OrderID as string,",
 						"          ProductID as string,",
@@ -468,10 +2507,453 @@
 						"     validateSchema: false,",
 						"     isolationLevel: 'READ_UNCOMMITTED',",
 						"     format: 'table') ~> orders",
-						"orders derive(updatedQuantity = Quantity+10) ~> updateQuantity",
-						"updateQuantity derive(unit_price = Price/Quantity) ~> findUnitPrice",
-						"findUnitPrice derive(Updated_Price = multiply(updatedQuantity, unit_price)) ~> findUpdatedPrice",
-						"findUpdatedPrice sink(allowSchemaDrift: true,",
+						"customers aggregate(groupBy(CustomerID,",
+						"          FirstName,",
+						"          LastName,",
+						"          Email,",
+						"          PhoneNumber,",
+						"          Address,",
+						"          City,",
+						"          State,",
+						"          ZipCode,",
+						"          Country),",
+						"     count = count(CustomerID)) ~> aggregate1",
+						"aggregate1 filter(Email != \"NULL\" && Email != \"\" && !isNull(Email) && PhoneNumber != \"NULL\" && PhoneNumber != \"\" && !isNull(PhoneNumber) && \r",
+						"Address != \"NULL\" && Address != \"\" && !isNull(Address) && City != \"NULL\" && City != \"\" && !isNull(City) && \r",
+						"State != \"NULL\" && State != \"\" && !isNull(State) && ZipCode != \"NULL\" && ZipCode != \"\" && !isNull(ZipCode) && \r",
+						"Country != \"NULL\" && Country != \"\" && !isNull(Country)) ~> filter1",
+						"filter1 select(mapColumn(",
+						"          CustomerID,",
+						"          FirstName,",
+						"          LastName,",
+						"          Email,",
+						"          PhoneNumber,",
+						"          Address,",
+						"          City,",
+						"          State,",
+						"          ZipCode,",
+						"          Country",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> select1",
+						"orders filter(OrderTimestamp != \"NULL\" && OrderTimestamp != \"\" && !isNull(OrderTimestamp)) ~> filter2",
+						"filter2 derive(pricePerUnit = Price/Quantity) ~> derivedColumn1",
+						"aggregate2 select(mapColumn(",
+						"          ProductID,",
+						"          ProductName,",
+						"          pricePerUnit",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> select2",
+						"derivedColumn1 aggregate(groupBy(ProductID,",
+						"          ProductName,",
+						"          Price,",
+						"          pricePerUnit),",
+						"     count = count(ProductID)) ~> aggregate2",
+						"select1 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     truncate:true,",
+						"     format: 'table',",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError') ~> sink1",
+						"filter2 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     input(",
+						"          OrderID as string,",
+						"          ProductID as string,",
+						"          ProductName as string,",
+						"          Quantity as string,",
+						"          OrderTimestamp as string,",
+						"          Price as string,",
+						"          CustomerID as string",
+						"     ),",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     truncate:true,",
+						"     format: 'table',",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError') ~> sink2",
+						"select2 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     truncate:true,",
+						"     format: 'table',",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError') ~> sink3"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/sql_prep_cust')]",
+				"[concat(variables('factoryId'), '/datasets/sql_prep_order')]",
+				"[concat(variables('factoryId'), '/datasets/sql_prep_product')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/dataflow1')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"folder": {
+					"name": "other"
+				},
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "sql_raw_store",
+								"type": "DatasetReference"
+							},
+							"name": "source1"
+						},
+						{
+							"dataset": {
+								"referenceName": "sql_raw_store",
+								"type": "DatasetReference"
+							},
+							"name": "source2"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "sql_prep_ass2_customer",
+								"type": "DatasetReference"
+							},
+							"name": "sink1"
+						},
+						{
+							"dataset": {
+								"referenceName": "sql_prep_ass2_order",
+								"type": "DatasetReference"
+							},
+							"name": "sink2"
+						},
+						{
+							"dataset": {
+								"referenceName": "sql_prep_ass2_product",
+								"type": "DatasetReference"
+							},
+							"name": "sink3"
+						}
+					],
+					"transformations": [
+						{
+							"name": "selectCustomer"
+						},
+						{
+							"name": "selectOrder"
+						},
+						{
+							"name": "select1"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          {Row ID} as string,",
+						"          {Order ID} as string,",
+						"          {Order Date} as string,",
+						"          {Ship Date} as string,",
+						"          {Ship Mode} as string,",
+						"          {Customer ID} as string,",
+						"          {Customer Name} as string,",
+						"          Segment as string,",
+						"          Country as string,",
+						"          City as string,",
+						"          State as string,",
+						"          {Postal Code} as string,",
+						"          Region as string,",
+						"          {Product ID} as string,",
+						"          Category as string,",
+						"          {Sub-Category} as string,",
+						"          {Product Name} as string,",
+						"          Sales as string,",
+						"          Quantity as string,",
+						"          Discount as string,",
+						"          Profit as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> source1",
+						"source(output(",
+						"          {Row ID} as string,",
+						"          {Order ID} as string,",
+						"          {Order Date} as string,",
+						"          {Ship Date} as string,",
+						"          {Ship Mode} as string,",
+						"          {Customer ID} as string,",
+						"          {Customer Name} as string,",
+						"          Segment as string,",
+						"          Country as string,",
+						"          City as string,",
+						"          State as string,",
+						"          {Postal Code} as string,",
+						"          Region as string,",
+						"          {Product ID} as string,",
+						"          Category as string,",
+						"          {Sub-Category} as string,",
+						"          {Product Name} as string,",
+						"          Sales as string,",
+						"          Quantity as string,",
+						"          Discount as string,",
+						"          Profit as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> source2",
+						"source1 select(mapColumn(",
+						"          {Customer ID},",
+						"          {Customer Name},",
+						"          Country,",
+						"          City,",
+						"          State,",
+						"          {Postal Code},",
+						"          Region",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> selectCustomer",
+						"source1 select(mapColumn(",
+						"          {Order ID},",
+						"          {Order Date},",
+						"          {Ship Date},",
+						"          {Ship Mode},",
+						"          {Customer ID},",
+						"          {Product ID},",
+						"          Sales,",
+						"          Quantity,",
+						"          Discount,",
+						"          Profit",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> selectOrder",
+						"source2 select(mapColumn(",
+						"          {Product ID},",
+						"          Category,",
+						"          {Sub-Category},",
+						"          {Product Name}",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> select1",
+						"selectCustomer sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     format: 'table',",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError') ~> sink1",
+						"selectOrder sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     format: 'table',",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError') ~> sink2",
+						"select1 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     format: 'table',",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError') ~> sink3"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/sql_raw_store')]",
+				"[concat(variables('factoryId'), '/datasets/sql_prep_ass2_customer')]",
+				"[concat(variables('factoryId'), '/datasets/sql_prep_ass2_order')]",
+				"[concat(variables('factoryId'), '/datasets/sql_prep_ass2_product')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/dataflow2')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"folder": {
+					"name": "shelf_talk"
+				},
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "sql_prep_data",
+								"type": "DatasetReference"
+							},
+							"name": "books"
+						},
+						{
+							"dataset": {
+								"referenceName": "sql_prep_data",
+								"type": "DatasetReference"
+							},
+							"name": "users"
+						},
+						{
+							"dataset": {
+								"referenceName": "sql_prep_data",
+								"type": "DatasetReference"
+							},
+							"name": "ratings"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "sql_report_data",
+								"type": "DatasetReference"
+							},
+							"name": "usersSink"
+						},
+						{
+							"dataset": {
+								"referenceName": "sql_report_data",
+								"type": "DatasetReference"
+							},
+							"name": "booksSink"
+						},
+						{
+							"dataset": {
+								"referenceName": "sql_report_data",
+								"type": "DatasetReference"
+							},
+							"name": "factSink"
+						},
+						{
+							"dataset": {
+								"referenceName": "sql_report_data",
+								"type": "DatasetReference"
+							},
+							"name": "ratingsSink"
+						}
+					],
+					"transformations": [
+						{
+							"name": "cleanedBooks"
+						},
+						{
+							"name": "joinRatingsAndUsers"
+						},
+						{
+							"name": "RatingsAndUsers"
+						},
+						{
+							"name": "RatingsAndUsersAndBooks"
+						},
+						{
+							"name": "factTable"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          id as string,",
+						"          ISBN as string,",
+						"          title as string,",
+						"          genre as string,",
+						"          author as string,",
+						"          publishedYear as string,",
+						"          image_blob as string,",
+						"          image_url as string,",
+						"          description as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> books",
+						"source(output(",
+						"          id as string,",
+						"          userName as string,",
+						"          pwd as string,",
+						"          isAdmin as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> users",
+						"source(output(",
+						"          id as string,",
+						"          user_id as string,",
+						"          book_id as string,",
+						"          stars as string,",
+						"          review as string,",
+						"          review_date as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> ratings",
+						"books select(mapColumn(",
+						"          id,",
+						"          ISBN,",
+						"          title,",
+						"          genre,",
+						"          author,",
+						"          publishedYear,",
+						"          image_url,",
+						"          description",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> cleanedBooks",
+						"ratings, users join(user_id == users@id,",
+						"     joinType:'left',",
+						"     matchType:'exact',",
+						"     ignoreSpaces: false,",
+						"     broadcast: 'auto')~> joinRatingsAndUsers",
+						"joinRatingsAndUsers select(mapColumn(",
+						"          id = ratings@id,",
+						"          userName,",
+						"          book_id,",
+						"          stars,",
+						"          review,",
+						"          review_date",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> RatingsAndUsers",
+						"RatingsAndUsers, cleanedBooks join(book_id == cleanedBooks@id,",
+						"     joinType:'left',",
+						"     matchType:'exact',",
+						"     ignoreSpaces: false,",
+						"     broadcast: 'auto')~> RatingsAndUsersAndBooks",
+						"RatingsAndUsersAndBooks select(mapColumn(",
+						"          id = RatingsAndUsers@id,",
+						"          userName,",
+						"          title,",
+						"          genre,",
+						"          author,",
+						"          stars,",
+						"          review,",
+						"          review_date,",
+						"          publishedYear,",
+						"          description",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> factTable",
+						"users sink(allowSchemaDrift: true,",
 						"     validateSchema: false,",
 						"     deletable:false,",
 						"     insertable:true,",
@@ -481,13 +2963,412 @@
 						"     format: 'table',",
 						"     skipDuplicateMapInputs: true,",
 						"     skipDuplicateMapOutputs: true,",
-						"     errorHandlingOption: 'stopOnFirstError') ~> sink"
+						"     errorHandlingOption: 'stopOnFirstError') ~> usersSink",
+						"cleanedBooks sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     recreate:true,",
+						"     format: 'table',",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError') ~> booksSink",
+						"factTable sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     recreate:true,",
+						"     format: 'table',",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError') ~> factSink",
+						"ratings sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     recreate:true,",
+						"     format: 'table',",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError') ~> ratingsSink"
 					]
 				}
 			},
 			"dependsOn": [
-				"[concat(variables('factoryId'), '/datasets/sql_order')]",
-				"[concat(variables('factoryId'), '/datasets/sql_updated_order')]"
+				"[concat(variables('factoryId'), '/datasets/sql_prep_data')]",
+				"[concat(variables('factoryId'), '/datasets/sql_report_data')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/dataflow3')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"folder": {
+					"name": "misumi"
+				},
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "misumi_sql_data",
+								"type": "DatasetReference"
+							},
+							"name": "poducts"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "misumi_sql_data",
+								"type": "DatasetReference"
+							},
+							"name": "subCategorySink"
+						},
+						{
+							"dataset": {
+								"referenceName": "misumi_sql_data",
+								"type": "DatasetReference"
+							},
+							"name": "mainCategorySink"
+						},
+						{
+							"dataset": {
+								"referenceName": "misumi_sql_data",
+								"type": "DatasetReference"
+							},
+							"name": "seriesCategorySink"
+						},
+						{
+							"dataset": {
+								"referenceName": "misumi_sql_data",
+								"type": "DatasetReference"
+							},
+							"name": "productsSink"
+						}
+					],
+					"transformations": [
+						{
+							"name": "onlyCategory"
+						},
+						{
+							"name": "groupCategory"
+						},
+						{
+							"name": "addId"
+						},
+						{
+							"name": "CategoryAndSubcategory"
+						},
+						{
+							"name": "groupBySubcategory"
+						},
+						{
+							"name": "MainCategory"
+						},
+						{
+							"name": "lookupMainCategory"
+						},
+						{
+							"name": "IdForSubcategury"
+						},
+						{
+							"name": "seriesCategory"
+						},
+						{
+							"name": "groupBySeriescategory"
+						},
+						{
+							"name": "addSubcategoryId"
+						},
+						{
+							"name": "removeUnnecessaryColumns"
+						},
+						{
+							"name": "IdForSubcategory"
+						},
+						{
+							"name": "selectProducts"
+						},
+						{
+							"name": "addSeriescategoryId"
+						},
+						{
+							"name": "reorderColumnsForSub"
+						},
+						{
+							"name": "reorderColumnForSeries"
+						},
+						{
+							"name": "IdAndSubcategory"
+						},
+						{
+							"name": "removeColumnsProducts"
+						},
+						{
+							"name": "addSubcategiryAndCategoryId"
+						},
+						{
+							"name": "removeAbundantColumns"
+						},
+						{
+							"name": "overProductCode"
+						},
+						{
+							"name": "removeDuplicates"
+						},
+						{
+							"name": "removeDuplicateColumn"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          category as string,",
+						"          subCategory as string,",
+						"          seriesCategoryCode as string,",
+						"          seriesCategoryName as string,",
+						"          seriesCode as string,",
+						"          seriesName as string,",
+						"          brandCode as string,",
+						"          brandName as string,",
+						"          imageUrl as string,",
+						"          minStandardUnitPrice as string,",
+						"          maxStandardUnitPrice as string,",
+						"          minPricePerPiece as string,",
+						"          maxPricePerPiece as string,",
+						"          minStandardDaysToShip as string,",
+						"          maxStandardDaysToShip as string,",
+						"          stockItemFlag as string,",
+						"          discontinuedProductFlag as string,",
+						"          specialShipmentFlag as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> poducts",
+						"poducts select(mapColumn(",
+						"          category",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> onlyCategory",
+						"onlyCategory aggregate(groupBy(category),",
+						"     count = count()) ~> groupCategory",
+						"groupCategory keyGenerate(output(id as long),",
+						"     startAt: 1L,",
+						"     stepValue: 1L) ~> addId",
+						"poducts select(mapColumn(",
+						"          category,",
+						"          subCategory",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> CategoryAndSubcategory",
+						"CategoryAndSubcategory aggregate(groupBy(category,",
+						"          subCategory),",
+						"     count = count()) ~> groupBySubcategory",
+						"addId select(mapColumn(",
+						"          id,",
+						"          category",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> MainCategory",
+						"groupBySubcategory, MainCategory lookup(groupBySubcategory@category == MainCategory@category,",
+						"     multiple: false,",
+						"     pickup: 'any',",
+						"     broadcast: 'auto')~> lookupMainCategory",
+						"IdAndSubcategory keyGenerate(output(id as long),",
+						"     startAt: 1L,",
+						"     stepValue: 1L) ~> IdForSubcategury",
+						"poducts select(mapColumn(",
+						"          category,",
+						"          subCategory,",
+						"          seriesCategoryCode,",
+						"          seriesCategoryName",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> seriesCategory",
+						"seriesCategory aggregate(groupBy(category,",
+						"          subCategory,",
+						"          seriesCategoryCode,",
+						"          seriesCategoryName),",
+						"     count = count()) ~> groupBySeriescategory",
+						"groupBySeriescategory, reorderColumnsForSub lookup(groupBySeriescategory@subCategory == reorderColumnsForSub@subCategory,",
+						"     multiple: false,",
+						"     pickup: 'any',",
+						"     broadcast: 'auto')~> addSubcategoryId",
+						"addSubcategoryId select(mapColumn(",
+						"          sub_category_id = id,",
+						"          seriesCategoryCode,",
+						"          seriesCategoryName",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> removeUnnecessaryColumns",
+						"removeUnnecessaryColumns keyGenerate(output(id as long),",
+						"     startAt: 1L,",
+						"     stepValue: 1L) ~> IdForSubcategory",
+						"poducts select(mapColumn(",
+						"          seriesCategoryCode,",
+						"          productCode = seriesCode,",
+						"          productName = seriesName,",
+						"          brandCode,",
+						"          brandName,",
+						"          minStandardUnitPrice,",
+						"          maxStandardUnitPrice,",
+						"          minPricePerPiece,",
+						"          maxPricePerPiece,",
+						"          minStandardDaysToShip,",
+						"          maxStandardDaysToShip,",
+						"          stockItemFlag,",
+						"          discontinuedProductFlag,",
+						"          specialShipmentFlag",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> selectProducts",
+						"removeDuplicateColumn, reorderColumnForSeries lookup(removeDuplicateColumn@seriesCategoryCode == reorderColumnForSeries@seriesCategoryCode,",
+						"     multiple: false,",
+						"     pickup: 'any',",
+						"     broadcast: 'auto')~> addSeriescategoryId",
+						"IdForSubcategury select(mapColumn(",
+						"          id,",
+						"          category_id,",
+						"          subCategory",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> reorderColumnsForSub",
+						"IdForSubcategory select(mapColumn(",
+						"          id,",
+						"          sub_category_id,",
+						"          seriesCategoryCode,",
+						"          seriesCategoryName",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> reorderColumnForSeries",
+						"lookupMainCategory select(mapColumn(",
+						"          category_id = id,",
+						"          subCategory",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> IdAndSubcategory",
+						"addSeriescategoryId select(mapColumn(",
+						"          sub_category_id,",
+						"          series_category_id = id,",
+						"          productCode,",
+						"          productName,",
+						"          brandCode,",
+						"          brandName,",
+						"          minStandardUnitPrice,",
+						"          maxStandardUnitPrice,",
+						"          minPricePerPiece,",
+						"          maxPricePerPiece,",
+						"          minStandardDaysToShip,",
+						"          maxStandardDaysToShip,",
+						"          stockItemFlag,",
+						"          discontinuedProductFlag,",
+						"          specialShipmentFlag",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> removeColumnsProducts",
+						"removeColumnsProducts, reorderColumnsForSub lookup(sub_category_id == id,",
+						"     multiple: false,",
+						"     pickup: 'any',",
+						"     broadcast: 'auto')~> addSubcategiryAndCategoryId",
+						"addSubcategiryAndCategoryId select(mapColumn(",
+						"          category_id,",
+						"          sub_category_id,",
+						"          series_category_id,",
+						"          productCode,",
+						"          productName,",
+						"          brandCode,",
+						"          brandName,",
+						"          minStandardUnitPrice,",
+						"          maxStandardUnitPrice,",
+						"          minPricePerPiece,",
+						"          maxPricePerPiece,",
+						"          minStandardDaysToShip,",
+						"          maxStandardDaysToShip,",
+						"          stockItemFlag,",
+						"          discontinuedProductFlag,",
+						"          specialShipmentFlag",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> removeAbundantColumns",
+						"selectProducts window(over(productCode),",
+						"     asc(productCode, true),",
+						"     RNK = rowNumber()) ~> overProductCode",
+						"overProductCode filter(RNK==1) ~> removeDuplicates",
+						"removeDuplicates select(mapColumn(",
+						"          seriesCategoryCode,",
+						"          productCode,",
+						"          productName,",
+						"          brandCode,",
+						"          brandName,",
+						"          minStandardUnitPrice,",
+						"          maxStandardUnitPrice,",
+						"          minPricePerPiece,",
+						"          maxPricePerPiece,",
+						"          minStandardDaysToShip,",
+						"          maxStandardDaysToShip,",
+						"          stockItemFlag,",
+						"          discontinuedProductFlag,",
+						"          specialShipmentFlag",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> removeDuplicateColumn",
+						"reorderColumnsForSub sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     recreate:true,",
+						"     format: 'table',",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError') ~> subCategorySink",
+						"MainCategory sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     recreate:true,",
+						"     format: 'table',",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError') ~> mainCategorySink",
+						"reorderColumnForSeries sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     recreate:true,",
+						"     format: 'table',",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError') ~> seriesCategorySink",
+						"removeAbundantColumns sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     recreate:true,",
+						"     format: 'table',",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError') ~> productsSink"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/misumi_sql_data')]"
 			]
 		}
 	]

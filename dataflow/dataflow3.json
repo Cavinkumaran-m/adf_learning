@@ -110,7 +110,13 @@
 					"name": "select12"
 				},
 				{
-					"name": "removingDuplicates"
+					"name": "window1"
+				},
+				{
+					"name": "filter1"
+				},
+				{
+					"name": "select13"
 				}
 			],
 			"scriptLines": [
@@ -215,7 +221,7 @@
 				"     ),",
 				"     skipDuplicateMapInputs: true,",
 				"     skipDuplicateMapOutputs: true) ~> select6",
-				"removingDuplicates, select9 lookup(removingDuplicates@seriesCategoryCode == select9@seriesCategoryCode,",
+				"select13, select9 lookup(select13@seriesCategoryCode == select9@seriesCategoryCode,",
 				"     multiple: false,",
 				"     pickup: 'any',",
 				"     broadcast: 'auto')~> lookup3",
@@ -283,7 +289,28 @@
 				"     ),",
 				"     skipDuplicateMapInputs: true,",
 				"     skipDuplicateMapOutputs: true) ~> select12",
-				"select6 aggregate(each(match(name!='productCode'), $$ = first($$))) ~> removingDuplicates",
+				"select6 window(over(productCode),",
+				"     asc(productCode, true),",
+				"     RNK = rowNumber()) ~> window1",
+				"window1 filter(RNK==1) ~> filter1",
+				"filter1 select(mapColumn(",
+				"          seriesCategoryCode,",
+				"          productCode,",
+				"          productName,",
+				"          brandCode,",
+				"          brandName,",
+				"          minStandardUnitPrice,",
+				"          maxStandardUnitPrice,",
+				"          minPricePerPiece,",
+				"          maxPricePerPiece,",
+				"          minStandardDaysToShip,",
+				"          maxStandardDaysToShip,",
+				"          stockItemFlag,",
+				"          discontinuedProductFlag,",
+				"          specialShipmentFlag",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select13",
 				"select8 sink(allowSchemaDrift: true,",
 				"     validateSchema: false,",
 				"     deletable:false,",
